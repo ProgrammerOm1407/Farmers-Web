@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - Farmers Web</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .orders-section {
+            padding: 40px 0;
+        }
+        
+        .orders-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .orders-header {
+            margin-bottom: 30px;
+        }
+        
+        .orders-header h2 {
+            margin-bottom: 10px;
+        }
+        
+        .order-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .order-id {
+            font-weight: 500;
+        }
+        
+        .order-date {
+            color: #999;
+        }
+        
+        .order-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-delivered {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+        
+        .status-processing {
+            background: rgba(255, 193, 7, 0.2);
+            color: #FFC107;
+        }
+        
+        .status-cancelled {
+            background: rgba(244, 67, 54, 0.2);
+            color: #F44336;
+        }
+        
+        .order-items {
+            margin-bottom: 15px;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-details {
+            display: flex;
+            align-items: center;
+        }
+        
+        .item-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-right: 15px;
+        }
+        
+        .item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .item-name {
+            font-weight: 500;
+        }
+        
+        .item-quantity {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .item-price {
+            font-weight: 500;
+        }
+        
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .order-total {
+            font-weight: 600;
+        }
+        
+        .order-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .order-actions button {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .track-btn {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+        
+        .track-btn:hover {
+            background: rgba(76, 175, 80, 0.3);
+        }
+        
+        .cancel-btn {
+            background: rgba(244, 67, 54, 0.2);
+            color: #F44336;
+        }
+        
+        .cancel-btn:hover {
+            background: rgba(244, 67, 54, 0.3);
+        }
+        
+        .no-orders {
+            text-align: center;
+            padding: 60px 0;
+            color: #666;
+        }
+        
+        .no-orders i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .no-orders h3 {
+            margin-bottom: 10px;
+        }
+        
+        .no-orders p {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="glass-effect">
+            <div class="logo">
+                <h1>Farmers<span>Web</span></h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="products.html">Products</a></li>
+                    <li><a href="about.html">About Us</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="nav-buttons">
+                <a href="login.html" class="btn login-btn">Login</a>
+                <a href="#" class="cart-icon" id="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+            <div class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </div>
+        </header>
+
+        <!-- Orders Section -->
+        <section class="orders-section">
+            <div class="orders-container glass-effect">
+                <div class="orders-header">
+                    <h2>My Orders</h2>
+                    <p>View and track all your orders</p>
+                </div>
+                
+                <div class="no-orders" id="no-orders">
+                    <i class="fas fa-shopping-bag"></i>
+                    <h3>No Orders Yet</h3>
+                    <p>You haven't placed any orders yet. Start shopping to see your orders here.</p>
+                    <a href="products.html" class="btn primary-btn">Shop Now</a>
+                </div>
+                
+                <div id="orders-list" style="display: none;">
+                    <!-- Orders will be added here dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Farmers<span>Web</span></h3>
+                    <p>Connecting farmers directly to consumers, providing the freshest grains at the best prices.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="products.html">Products</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    <p><i class="fas fa-map-marker-alt"></i> 123 Farmer's Lane, Agri City</p>
+                    <p><i class="fas fa-phone"></i> +91 98765 43210</p>
+                    <p><i class="fas fa-envelope"></i> info@farmersweb.com</p>
+                </div>
+                <div class="footer-section">
+                    <h3>We Accept</h3>
+                    <div class="payment-methods">
+                        <img src="../images/razorpay.png" alt="Razorpay">
+                        <img src="../images/upi.png" alt="UPI">
+                        <img src="../images/mastercard.png" alt="Mastercard">
+                        <img src="../images/visa.png" alt="Visa">
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 FarmersWeb. All Rights Reserved.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h2>Your Cart</h2>
+            <button class="close-cart" id="close-cart"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Cart items will be added here dynamically -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cart-total-price">₹0.00</span>
+            </div>
+            <a href="checkout.html" class="btn primary-btn checkout-btn">Proceed to Checkout</a>
+        </div>
+    </div>
+    <div class="overlay" id="overlay"></div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/cart.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
+                // Redirect to login page if not logged in
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // For demo purposes, we'll create some sample orders
+            // In a real application, these would come from a database
+            const sampleOrders = [
+                {
+                    id: 'ORD123456',
+                    date: '2023-07-15',
+                    status: 'delivered',
+                    items: [
+                        {
+                            name: 'Organic Wheat',
+                            quantity: 2,
+                            price: 250,
+                            image: '../images/products/wheat.jpg'
+                        },
+                        {
+                            name: 'Brown Rice',
+                            quantity: 1,
+                            price: 180,
+                            image: '../images/products/rice.jpg'
+                        }
+                    ],
+                    total: 680,
+                    address: '123 Main St, Agri City'
+                },
+                {
+                    id: 'ORD123457',
+                    date: '2023-08-02',
+                    status: 'processing',
+                    items: [
+                        {
+                            name: 'Organic Millet',
+                            quantity: 3,
+                            price: 150,
+                            image: '../images/products/millet.jpg'
+                        }
+                    ],
+                    total: 450,
+                    address: '123 Main St, Agri City'
+                }
+            ];
+            
+            // Check if there are any orders
+            if (sampleOrders.length > 0) {
+                // Hide no orders message
+                document.getElementById('no-orders').style.display = 'none';
+                
+                // Show orders list
+                const ordersList = document.getElementById('orders-list');
+                ordersList.style.display = 'block';
+                
+                // Generate order cards
+                sampleOrders.forEach(order => {
+                    const orderCard = document.createElement('div');
+                    orderCard.className = 'order-card';
+                    
+                    // Format date
+                    const orderDate = new Date(order.date);
+                    const formattedDate = orderDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    
+                    // Create order header
+                    const orderHeader = document.createElement('div');
+                    orderHeader.className = 'order-header';
+                    orderHeader.innerHTML = `
+                        <div>
+                            <div class="order-id">Order #${order.id}</div>
+                            <div class="order-date">${formattedDate}</div>
+                        </div>
+                        <div class="order-status status-${order.status}">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</div>
+                    `;
+                    
+                    // Create order items
+                    const orderItems = document.createElement('div');
+                    orderItems.className = 'order-items';
+                    
+                    order.items.forEach(item => {
+                        const orderItem = document.createElement('div');
+                        orderItem.className = 'order-item';
+                        orderItem.innerHTML = `
+                            <div class="item-details">
+                                <div class="item-image">
+                                    <img src="${item.image}" alt="${item.name}">
+                                </div>
+                                <div>
+                                    <div class="item-name">${item.name}</div>
+                                    <div class="item-quantity">Qty: ${item.quantity}</div>
+                                </div>
+                            </div>
+                            <div class="item-price">₹${item.price * item.quantity}</div>
+                        `;
+                        
+                        orderItems.appendChild(orderItem);
+                    });
+                    
+                    // Create order footer
+                    const orderFooter = document.createElement('div');
+                    orderFooter.className = 'order-footer';
+                    
+                    // Only show cancel button for processing orders
+                    const cancelButton = order.status === 'processing' ? 
+                        `<button class="cancel-btn" data-order-id="${order.id}">Cancel Order</button>` : '';
+                    
+                    orderFooter.innerHTML = `
+                        <div class="order-total">Total: ₹${order.total}</div>
+                        <div class="order-actions">
+                            <button class="track-btn" data-order-id="${order.id}">Track Order</button>
+                            ${cancelButton}
+                        </div>
+                    `;
+                    
+                    // Assemble order card
+                    orderCard.appendChild(orderHeader);
+                    orderCard.appendChild(orderItems);
+                    orderCard.appendChild(orderFooter);
+                    
+                    // Add to orders list
+                    ordersList.appendChild(orderCard);
+                });
+                
+                // Add event listeners for track and cancel buttons
+                const trackButtons = document.querySelectorAll('.track-btn');
+                const cancelButtons = document.querySelectorAll('.cancel-btn');
+                
+                trackButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const orderId = this.getAttribute('data-order-id');
+                        showNotification(`Tracking information for order #${orderId} will be sent to your email`);
+                    });
+                });
+                
+                cancelButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const orderId = this.getAttribute('data-order-id');
+                        
+                        if (confirm(`Are you sure you want to cancel order #${orderId}?`)) {
+                            // In a real application, you would send a request to cancel the order
+                            showNotification(`Order #${orderId} has been cancelled`);
+                            
+                            // Update UI
+                            const orderCard = this.closest('.order-card');
+                            const statusElement = orderCard.querySelector('.order-status');
+                            
+                            statusElement.className = 'order-status status-cancelled';
+                            statusElement.textContent = 'Cancelled';
+                            
+                            // Remove cancel button
+                            this.remove();
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

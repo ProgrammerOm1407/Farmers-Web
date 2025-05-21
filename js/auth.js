@@ -1,30 +1,46 @@
 // Authentication functionality for Farmers Web
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching functionality
+    // Check if user is already logged in
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+        // Update UI for logged-in user
+        updateUIForLoggedInUser(currentUser);
+    }
+    
+    // Make email tab active by default
     const authTabs = document.querySelectorAll('.auth-tab');
     const authForms = document.querySelectorAll('.auth-form');
     
+    // Set email tab as active by default
     if (authTabs.length > 0) {
-        authTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                // Remove active class from all tabs and forms
-                authTabs.forEach(t => t.classList.remove('active'));
-                authForms.forEach(f => f.classList.remove('active'));
-                
-                // Add active class to clicked tab
-                this.classList.add('active');
-                
-                // Show corresponding form
-                const tabName = this.getAttribute('data-tab');
-                
-                if (tabName === 'phone') {
-                    document.getElementById('phone-login-form').classList.add('active');
-                } else if (tabName === 'email') {
-                    document.getElementById('email-login-form').classList.add('active');
-                }
-            });
-        });
+        // Remove active class from all tabs and forms
+        authTabs.forEach(t => t.classList.remove('active'));
+        authForms.forEach(f => f.classList.remove('active'));
+        
+        // Find and activate email tab
+        const emailTab = document.querySelector('.auth-tab[data-tab="email"]');
+        if (emailTab) {
+            emailTab.classList.add('active');
+        }
+        
+        // Show email form
+        const emailForm = document.getElementById('email-login-form');
+        if (emailForm) {
+            emailForm.classList.add('active');
+        }
+        
+        // Hide phone-related forms
+        const phoneForm = document.getElementById('phone-login-form');
+        const otpForm = document.getElementById('otp-verification-form');
+        if (phoneForm) phoneForm.style.display = 'none';
+        if (otpForm) otpForm.style.display = 'none';
+        
+        // Hide the phone tab
+        const phoneTab = document.querySelector('.auth-tab[data-tab="phone"]');
+        if (phoneTab) {
+            phoneTab.style.display = 'none';
+        }
     }
     
     // Toggle password visibility
@@ -47,121 +63,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Phone login form submission
-    const phoneLoginForm = document.getElementById('phone-login-form');
-    const otpVerificationForm = document.getElementById('otp-verification-form');
-    
-    if (phoneLoginForm) {
-        phoneLoginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const phoneNumber = document.getElementById('phone').value;
-            
-            if (phoneNumber.length !== 10 || !/^\d+$/.test(phoneNumber)) {
-                showAlert('Please enter a valid 10-digit mobile number');
-                return;
-            }
-            
-            // In a real application, you would send an API request to send OTP
-            // For demo purposes, we'll just show the OTP verification form
-            
-            // Hide phone login form and show OTP verification form
-            phoneLoginForm.classList.remove('active');
-            otpVerificationForm.classList.add('active');
-            
-            // Start OTP timer
-            startOtpTimer();
-            
-            // Auto-focus first OTP input
-            const otpInputs = document.querySelectorAll('.otp-inputs input');
-            if (otpInputs.length > 0) {
-                otpInputs[0].focus();
-            }
-            
-            // Show a notification
-            showNotification(`OTP sent to +91 ${phoneNumber}`);
-        });
-    }
-    
-    // OTP input functionality
-    const otpInputs = document.querySelectorAll('.otp-inputs input');
-    
-    if (otpInputs.length > 0) {
-        // Auto-tab between OTP inputs
-        otpInputs.forEach((input, index) => {
-            input.addEventListener('keyup', function(e) {
-                // If input has a value, move to next input
-                if (this.value.length === 1 && index < otpInputs.length - 1) {
-                    otpInputs[index + 1].focus();
-                }
-                
-                // If backspace is pressed and input is empty, move to previous input
-                if (e.key === 'Backspace' && this.value.length === 0 && index > 0) {
-                    otpInputs[index - 1].focus();
-                }
-            });
-            
-            // Prevent non-numeric input
-            input.addEventListener('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '');
-            });
-        });
-    }
-    
-    // OTP verification form submission
-    if (otpVerificationForm) {
-        otpVerificationForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Get OTP from inputs
-            let otp = '';
-            otpInputs.forEach(input => {
-                otp += input.value;
-            });
-            
-            if (otp.length !== 6) {
-                showAlert('Please enter a valid 6-digit OTP');
-                return;
-            }
-            
-            // In a real application, you would send an API request to verify OTP
-            // For demo purposes, we'll just redirect to the home page
-            
-            // Show a notification
-            showNotification('Login successful! Redirecting...');
-            
-            // Redirect to home page after a short delay
-            setTimeout(() => {
-                window.location.href = '../index.html';
-            }, 1500);
-        });
-    }
-    
-    // Resend OTP button
-    const resendOtpBtn = document.getElementById('resend-otp');
-    
-    if (resendOtpBtn) {
-        resendOtpBtn.addEventListener('click', function() {
-            if (!this.disabled) {
-                // In a real application, you would send an API request to resend OTP
-                
-                // Reset OTP inputs
-                otpInputs.forEach(input => {
-                    input.value = '';
-                });
-                
-                // Focus first input
-                otpInputs[0].focus();
-                
-                // Restart timer
-                startOtpTimer();
-                
-                // Show a notification
-                showNotification('OTP resent successfully');
-            }
-        });
-    }
-    
     // Email login form submission
     const emailLoginForm = document.getElementById('email-login-form');
     
@@ -169,52 +70,155 @@ document.addEventListener('DOMContentLoaded', function() {
         emailLoginForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             
-            // In a real application, you would send an API request to verify credentials
-            // For demo purposes, we'll just redirect to the home page
+            // Simple validation
+            if (!email || !validateEmail(email)) {
+                showAlert('Please enter a valid email address');
+                return;
+            }
             
-            // Show a notification
-            showNotification('Login successful! Redirecting...');
+            if (!password) {
+                showAlert('Please enter your password');
+                return;
+            }
             
-            // Redirect to home page after a short delay
+            // Authenticate user
+            const authenticated = authenticateUser(email, password);
+            
+            if (authenticated) {
+                // Show a notification
+                showNotification('Login successful! Redirecting...');
+                
+                // Redirect to home page after a short delay
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1500);
+            } else {
+                showAlert('Invalid email or password');
+            }
+        });
+    }
+    
+    // Logout functionality
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            logoutUser();
+            showNotification('You have been logged out');
+            
+            // Redirect to home page
             setTimeout(() => {
                 window.location.href = '../index.html';
             }, 1500);
         });
     }
+    
+    // Forgot password functionality
+    const forgotPasswordLink = document.querySelector('.forgot-password');
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            
+            if (!email || !validateEmail(email)) {
+                showAlert('Please enter your email address in the email field');
+                return;
+            }
+            
+            // In a real application, you would send a password reset email
+            // For demo purposes, we'll just show a notification
+            
+            showNotification(`Password reset instructions sent to ${email}`);
+        });
+    }
 });
 
-// Function to start OTP timer
-function startOtpTimer() {
-    const timerElement = document.getElementById('timer');
-    const resendOtpBtn = document.getElementById('resend-otp');
+// Function to validate email format
+function validateEmail(email) {
+    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+}
+
+// Function to authenticate user
+function authenticateUser(email, password) {
+    // Get users from localStorage
+    const users = JSON.parse(localStorage.getItem('farmersWebUsers')) || [];
     
-    if (!timerElement || !resendOtpBtn) return;
+    // Find user with matching email
+    const user = users.find(u => u.email === email);
     
-    // Disable resend button
-    resendOtpBtn.disabled = true;
+    // If user not found or password doesn't match, return false
+    if (!user || user.password !== hashPassword(password)) {
+        return false;
+    }
     
-    // Set timer for 60 seconds
-    let seconds = 60;
+    // Set current user in localStorage (session)
+    const sessionUser = {
+        id: user.id || Date.now(),
+        fullname: user.fullname,
+        email: user.email,
+        phone: user.phone,
+        loggedInAt: new Date().toISOString()
+    };
     
-    // Update timer every second
-    const timerInterval = setInterval(() => {
-        seconds--;
+    localStorage.setItem('farmersWebCurrentUser', JSON.stringify(sessionUser));
+    
+    return true;
+}
+
+// Function to get current logged-in user
+function getCurrentUser() {
+    return JSON.parse(localStorage.getItem('farmersWebCurrentUser'));
+}
+
+// Function to update UI for logged-in user
+function updateUIForLoggedInUser(user) {
+    // Update login button to show user name
+    const loginBtn = document.querySelector('.login-btn');
+    if (loginBtn) {
+        loginBtn.textContent = user.fullname.split(' ')[0]; // Show first name
+        loginBtn.href = '#';
         
-        // Format time as MM:SS
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
+        // Create dropdown for user menu
+        const dropdown = document.createElement('div');
+        dropdown.className = 'user-dropdown';
+        dropdown.innerHTML = `
+            <ul>
+                <li><a href="profile.html">My Profile</a></li>
+                <li><a href="orders.html">My Orders</a></li>
+                <li><a href="#" id="logout-btn">Logout</a></li>
+            </ul>
+        `;
         
-        timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        // Add dropdown to login button
+        loginBtn.appendChild(dropdown);
         
-        // If timer reaches 0, enable resend button and clear interval
-        if (seconds <= 0) {
-            clearInterval(timerInterval);
-            resendOtpBtn.disabled = false;
-        }
-    }, 1000);
+        // Show dropdown on hover
+        loginBtn.addEventListener('mouseenter', function() {
+            dropdown.style.display = 'block';
+        });
+        
+        loginBtn.addEventListener('mouseleave', function() {
+            dropdown.style.display = 'none';
+        });
+    }
+}
+
+// Function to logout user
+function logoutUser() {
+    localStorage.removeItem('farmersWebCurrentUser');
+}
+
+// Function to hash password (for demo purposes only)
+// In a real application, this would be done server-side
+function hashPassword(password) {
+    // This is NOT secure and is only for demonstration
+    // In a real app, use a proper hashing algorithm on the server
+    return btoa(password); // Base64 encoding (NOT secure for real use)
 }
 
 // Function to show alert
