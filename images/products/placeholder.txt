@@ -1,0 +1,10 @@
+This is a placeholder file. In a real implementation, you would have actual product images here.
+
+The website code is set up to handle missing images by falling back to a product-placeholder.jpg image.
+
+For a complete implementation, you would need to:
+1. Create a 'products' directory inside the 'images' directory
+2. Add product images with names matching those referenced in the JavaScript files
+3. Add a product-placeholder.jpg as a fallback image
+
+For testing purposes, you can download free stock images of grains and rename them according to the product names in the JavaScript files.

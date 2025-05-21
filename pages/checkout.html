@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Farmers Web</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/checkout.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Razorpay Checkout -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="glass-effect">
+            <div class="logo">
+                <h1>Farmers<span>Web</span></h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="products.html">Products</a></li>
+                    <li><a href="about.html">About Us</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="nav-buttons">
+                <a href="login.html" class="btn login-btn">Login</a>
+                <a href="#" class="cart-icon" id="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+            <div class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </div>
+        </header>
+
+        <!-- Checkout Section -->
+        <section class="checkout-section">
+            <div class="checkout-container">
+                <div class="checkout-header">
+                    <h2>Checkout</h2>
+                    <div class="checkout-steps">
+                        <div class="step active">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Shipping</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Payment</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Confirmation</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="checkout-content">
+                    <!-- Shipping Form -->
+                    <div class="checkout-form-container active" id="shipping-form-container">
+                        <form id="shipping-form" class="checkout-form glass-effect">
+                            <h3>Shipping Information</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="first-name">First Name</label>
+                                    <input type="text" id="first-name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="last-name">Last Name</label>
+                                    <input type="text" id="last-name" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="phone">Phone Number</label>
+                                <div class="input-group">
+                                    <div class="country-code">+91</div>
+                                    <input type="tel" id="phone" pattern="[0-9]{10}" maxlength="10" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="address">Address</label>
+                                <input type="text" id="address" required>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="city">City</label>
+                                    <input type="text" id="city" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="state">State</label>
+                                    <select id="state" required>
+                                        <option value="">Select State</option>
+                                        <option value="Andhra Pradesh">Andhra Pradesh</option>
+                                        <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                                        <option value="Assam">Assam</option>
+                                        <option value="Bihar">Bihar</option>
+                                        <option value="Chhattisgarh">Chhattisgarh</option>
+                                        <option value="Goa">Goa</option>
+                                        <option value="Gujarat">Gujarat</option>
+                                        <option value="Haryana">Haryana</option>
+                                        <option value="Himachal Pradesh">Himachal Pradesh</option>
+                                        <option value="Jharkhand">Jharkhand</option>
+                                        <option value="Karnataka">Karnataka</option>
+                                        <option value="Kerala">Kerala</option>
+                                        <option value="Madhya Pradesh">Madhya Pradesh</option>
+                                        <option value="Maharashtra">Maharashtra</option>
+                                        <option value="Manipur">Manipur</option>
+                                        <option value="Meghalaya">Meghalaya</option>
+                                        <option value="Mizoram">Mizoram</option>
+                                        <option value="Nagaland">Nagaland</option>
+                                        <option value="Odisha">Odisha</option>
+                                        <option value="Punjab">Punjab</option>
+                                        <option value="Rajasthan">Rajasthan</option>
+                                        <option value="Sikkim">Sikkim</option>
+                                        <option value="Tamil Nadu">Tamil Nadu</option>
+                                        <option value="Telangana">Telangana</option>
+                                        <option value="Tripura">Tripura</option>
+                                        <option value="Uttar Pradesh">Uttar Pradesh</option>
+                                        <option value="Uttarakhand">Uttarakhand</option>
+                                        <option value="West Bengal">West Bengal</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="pincode">Pincode</label>
+                                    <input type="text" id="pincode" pattern="[0-9]{6}" maxlength="6" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="delivery-instructions">Delivery Instructions (Optional)</label>
+                                <textarea id="delivery-instructions" rows="3"></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn primary-btn">Continue to Payment</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Payment Form -->
+                    <div class="checkout-form-container" id="payment-form-container">
+                        <div class="checkout-form glass-effect">
+                            <h3>Payment Method</h3>
+                            
+                            <div class="payment-methods-container">
+                                <div class="payment-method active" data-method="razorpay">
+                                    <div class="payment-method-header">
+                                        <div class="payment-method-radio">
+                                            <input type="radio" id="razorpay" name="payment-method" checked>
+                                            <label for="razorpay"></label>
+                                        </div>
+                                        <div class="payment-method-name">Razorpay</div>
+                                        <div class="payment-method-icons">
+                                            <img src="../images/razorpay.png" alt="Razorpay">
+                                        </div>
+                                    </div>
+                                    <div class="payment-method-content">
+                                        <p>You will be redirected to Razorpay's secure payment gateway to complete your payment.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-method" data-method="cod">
+                                    <div class="payment-method-header">
+                                        <div class="payment-method-radio">
+                                            <input type="radio" id="cod" name="payment-method">
+                                            <label for="cod"></label>
+                                        </div>
+                                        <div class="payment-method-name">Cash on Delivery</div>
+                                        <div class="payment-method-icons">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                        </div>
+                                    </div>
+                                    <div class="payment-method-content">
+                                        <p>Pay with cash upon delivery. Please ensure you have the exact amount ready.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="checkout-buttons">
+                                <button type="button" class="btn secondary-btn" id="back-to-shipping">Back</button>
+                                <button type="button" class="btn primary-btn" id="place-order-btn">Place Order</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Confirmation -->
+                    <div class="checkout-form-container" id="confirmation-container">
+                        <div class="checkout-form glass-effect">
+                            <div class="order-confirmation">
+                                <div class="confirmation-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <h3>Order Placed Successfully!</h3>
+                                <p>Thank you for your order. Your order has been placed successfully and is being processed.</p>
+                                <div class="order-details">
+                                    <div class="order-detail">
+                                        <span>Order Number:</span>
+                                        <span id="order-number">#FW12345</span>
+                                    </div>
+                                    <div class="order-detail">
+                                        <span>Order Date:</span>
+                                        <span id="order-date">June 15, 2023</span>
+                                    </div>
+                                    <div class="order-detail">
+                                        <span>Payment Method:</span>
+                                        <span id="payment-method">Razorpay</span>
+                                    </div>
+                                    <div class="order-detail">
+                                        <span>Shipping Address:</span>
+                                        <span id="shipping-address">123 Main St, City, State, 123456</span>
+                                    </div>
+                                </div>
+                                <p>You will receive an email confirmation shortly with your order details.</p>
+                                <div class="confirmation-buttons">
+                                    <a href="../index.html" class="btn secondary-btn">Continue Shopping</a>
+                                    <a href="#" class="btn primary-btn">Track Order</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Order Summary -->
+                <div class="order-summary glass-effect">
+                    <h3>Order Summary</h3>
+                    <div class="cart-items" id="checkout-cart-items">
+                        <!-- Cart items will be added here dynamically -->
+                    </div>
+                    <div class="summary-totals">
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span id="subtotal">₹0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Shipping</span>
+                            <span id="shipping-cost">₹40.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Tax (5%)</span>
+                            <span id="tax">₹0.00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total</span>
+                            <span id="total">₹0.00</span>
+                        </div>
+                    </div>
+                    <div class="coupon-code">
+                        <input type="text" placeholder="Enter coupon code" id="coupon-input">
+                        <button class="btn secondary-btn" id="apply-coupon">Apply</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Farmers<span>Web</span></h3>
+                    <p>Connecting farmers directly to consumers, providing the freshest grains at the best prices.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="products.html">Products</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    <p><i class="fas fa-map-marker-alt"></i> 123 Farmer's Lane, Agri City</p>
+                    <p><i class="fas fa-phone"></i> +91 98765 43210</p>
+                    <p><i class="fas fa-envelope"></i> info@farmersweb.com</p>
+                </div>
+                <div class="footer-section">
+                    <h3>We Accept</h3>
+                    <div class="payment-methods">
+                        <img src="../images/razorpay.png" alt="Razorpay">
+                        <img src="../images/upi.png" alt="UPI">
+                        <img src="../images/mastercard.png" alt="Mastercard">
+                        <img src="../images/visa.png" alt="Visa">
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 FarmersWeb. All Rights Reserved.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/cart.js"></script>
+    <script src="../js/checkout.js"></script>
+</body>
+</html>
