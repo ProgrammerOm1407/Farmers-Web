@@ -4,10 +4,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mobile Menu Toggle
     const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
     const nav = document.querySelector('nav');
+    const overlay = document.getElementById('overlay');
     
     if (mobileMenuBtn) {
         mobileMenuBtn.addEventListener('click', function() {
             nav.classList.toggle('active');
+            overlay.classList.toggle('active');
+        });
+        
+        // Close menu when clicking on a menu item
+        const navLinks = nav.querySelectorAll('a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                nav.classList.remove('active');
+                overlay.classList.remove('active');
+            });
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            if (nav.classList.contains('active') && 
+                !nav.contains(event.target) && 
+                !mobileMenuBtn.contains(event.target)) {
+                nav.classList.remove('active');
+                overlay.classList.remove('active');
+            }
         });
     }
     
@@ -78,9 +99,12 @@ function loadFeaturedProducts() {
         const productCard = document.createElement('div');
         productCard.className = 'product-card';
         
+        // Handle image path for better error handling
+        const imagePath = product.image;
+        
         productCard.innerHTML = `
             <div class="product-image">
-                <img src="${product.image}" alt="${product.name}" onerror="this.src='images/product-placeholder.jpg'">
+                <img src="${imagePath}" alt="${product.name}" onerror="this.src='images/product-placeholder.jpg'">
             </div>
             <div class="product-info">
                 <h3>${product.name}</h3>
@@ -88,7 +112,7 @@ function loadFeaturedProducts() {
                     <span class="price">₹${product.price} <small>/ ${product.unit}</small></span>
                     <span class="old-price">₹${product.oldPrice}</span>
                 </div>
-                <button class="btn primary-btn add-to-cart" data-id="${product.id}" data-name="${product.name}" data-price="${product.price}" data-image="${product.image}">
+                <button class="btn primary-btn add-to-cart" data-id="${product.id}" data-name="${product.name}" data-price="${product.price}" data-image="${imagePath}">
                     Add to Cart
                 </button>
             </div>

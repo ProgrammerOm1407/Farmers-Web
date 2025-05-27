@@ -408,7 +408,17 @@
 }
 
 /* Responsive Styles */
+@media (max-width: 1200px) {
+    .checkout-container {
+        grid-template-columns: 1fr 300px;
+    }
+}
+
 @media (max-width: 992px) {
+    .checkout-section {
+        padding: 30px 0;
+    }
+    
     .checkout-container {
         grid-template-columns: 1fr;
     }
@@ -417,12 +427,64 @@
         position: static;
         margin-top: 30px;
     }
+    
+    .checkout-header h2 {
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    
+    .checkout-steps {
+        max-width: 100%;
+    }
+    
+    .step-number {
+        width: 25px;
+        height: 25px;
+        font-size: 14px;
+    }
+    
+    .step-label {
+        font-size: 13px;
+    }
 }
 
 @media (max-width: 768px) {
+    .checkout-section {
+        padding: 20px 0;
+    }
+    
+    .checkout-header h2 {
+        font-size: 22px;
+    }
+    
+    .checkout-form {
+        padding: 20px;
+    }
+    
+    .checkout-form h3 {
+        font-size: 18px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+    }
+    
     .form-row {
         grid-template-columns: 1fr;
         gap: 0;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 10px;
     }
     
     .checkout-buttons {
@@ -441,5 +503,97 @@
     
     .confirmation-buttons .btn {
         width: 100%;
+    }
+    
+    .order-summary {
+        padding: 20px;
+    }
+    
+    .order-summary h3 {
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+    
+    .payment-method-header {
+        padding: 12px;
+    }
+    
+    .payment-method-content {
+        padding: 0 12px 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .checkout-header h2 {
+        font-size: 20px;
+    }
+    
+    .step-number {
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+    }
+    
+    .step-label {
+        font-size: 12px;
+    }
+    
+    .checkout-form {
+        padding: 15px;
+    }
+    
+    .checkout-form h3 {
+        font-size: 16px;
+    }
+    
+    .order-summary {
+        padding: 15px;
+    }
+    
+    .order-summary h3 {
+        font-size: 16px;
+    }
+    
+    .cart-item-image {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .cart-item-title {
+        font-size: 14px;
+    }
+    
+    .coupon-code button {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 375px) {
+    .checkout-header h2 {
+        font-size: 18px;
+    }
+    
+    .checkout-steps {
+        display: none; /* Hide steps on very small screens */
+    }
+    
+    .form-group label {
+        font-size: 13px;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 8px;
+        font-size: 14px;
+    }
+    
+    .summary-row {
+        font-size: 14px;
+    }
+    
+    .summary-row.total {
+        font-size: 16px;
     }
 }

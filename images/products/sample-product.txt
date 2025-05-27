@@ -1,0 +1,17 @@
+This is a placeholder for a product image.
+
+To add real product images:
+1. Replace this file with actual product images in JPG or PNG format
+2. Name the files according to the product names (e.g., basmati-rice.jpg, wheat-flour.jpg)
+3. Use high-quality images with consistent dimensions (recommended: 600x600px)
+4. Ensure the images have good lighting and show the product clearly
+
+Example product images needed:
+- basmati-rice.jpg
+- wheat-flour.jpg
+- brown-rice.jpg
+- quinoa.jpg
+- millet.jpg
+- organic-lentils.jpg
+- chickpeas.jpg
+- black-rice.jpg
