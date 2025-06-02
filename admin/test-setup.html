@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Setup - Farmers Web</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Setup Test</h1>
+        <p>This page will help you test the admin setup and authentication.</p>
+        
+        <div class="test-section">
+            <h3>Step 1: Create Admin User</h3>
+            <p>Email: programmerom2006@gmail.com</p>
+            <p>Password: admin123456</p>
+            <button class="btn" onclick="createAdminUser()">Create Admin User</button>
+            <div id="create-status"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Step 2: Test Login</h3>
+            <button class="btn" onclick="testLogin()">Test Login</button>
+            <div id="login-status"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Step 3: Check Admin Database</h3>
+            <button class="btn" onclick="checkAdminDB()">Check Admin Database</button>
+            <div id="db-status"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Quick Links</h3>
+            <a href="quick-admin-setup.html" class="btn">Quick Admin Setup</a>
+            <a href="login.html" class="btn">Admin Login</a>
+            <a href="index.html" class="btn">Admin Dashboard</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { 
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { 
+            doc, 
+            setDoc, 
+            getDoc,
+            serverTimestamp 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { auth, db } from './js/firebase-config.js';
+
+        const adminData = {
+            email: 'programmerom2006@gmail.com',
+            password: 'admin123456',
+            fullname: 'Admin User',
+            role: 'admin'
+        };
+
+        window.createAdminUser = async function() {
+            const statusDiv = document.getElementById('create-status');
+            
+            try {
+                statusDiv.innerHTML = '<div class="info">Creating admin user...</div>';
+                
+                let userId = null;
+                
+                // Try to create user
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, adminData.email, adminData.password);
+                    userId = userCredential.user.uid;
+                    statusDiv.innerHTML = '<div class="info">User created in Firebase Auth. Adding to admin database...</div>';
+                } catch (authError) {
+                    if (authError.code === 'auth/email-already-in-use') {
+                        statusDiv.innerHTML = '<div class="info">User already exists. Getting user ID...</div>';
+                        const userCredential = await signInWithEmailAndPassword(auth, adminData.email, adminData.password);
+                        userId = userCredential.user.uid;
+                        await signOut(auth);
+                    } else {
+                        throw authError;
+                    }
+                }
+                
+                // Add to admin database
+                const adminUserData = {
+                    uid: userId,
+                    email: adminData.email,
+                    fullname: adminData.fullname,
+                    role: adminData.role,
+                    status: 'active',
+                    permissions: {
+                        products: { read: true, write: true, delete: true },
+                        orders: { read: true, write: true, delete: true },
+                        customers: { read: true, write: true, delete: false },
+                        sellers: { read: true, write: true, delete: true },
+                        analytics: { read: true, write: false, delete: false },
+                        settings: { read: true, write: true, delete: false }
+                    },
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    createdBy: 'system'
+                };
+                
+                await setDoc(doc(db, 'admins', userId), adminUserData, { merge: true });
+                await signOut(auth);
+                
+                statusDiv.innerHTML = '<div class="success">✅ Admin user created successfully!</div>';
+                
+            } catch (error) {
+                console.error('Error creating admin user:', error);
+                statusDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testLogin = async function() {
+            const statusDiv = document.getElementById('login-status');
+            
+            try {
+                statusDiv.innerHTML = '<div class="info">Testing login...</div>';
+                
+                const userCredential = await signInWithEmailAndPassword(auth, adminData.email, adminData.password);
+                const user = userCredential.user;
+                
+                statusDiv.innerHTML = '<div class="success">✅ Login successful! User ID: ' + user.uid + '</div>';
+                
+                // Sign out after test
+                await signOut(auth);
+                
+            } catch (error) {
+                console.error('Login test error:', error);
+                statusDiv.innerHTML = `<div class="error">❌ Login failed: ${error.message}</div>`;
+            }
+        };
+
+        window.checkAdminDB = async function() {
+            const statusDiv = document.getElementById('db-status');
+            
+            try {
+                statusDiv.innerHTML = '<div class="info">Checking admin database...</div>';
+                
+                // First sign in to get user ID
+                const userCredential = await signInWithEmailAndPassword(auth, adminData.email, adminData.password);
+                const userId = userCredential.user.uid;
+                
+                // Check admin document
+                const adminDoc = await getDoc(doc(db, 'admins', userId));
+                
+                if (adminDoc.exists()) {
+                    const adminData = adminDoc.data();
+                    statusDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Admin user found in database!<br>
+                            Role: ${adminData.role}<br>
+                            Status: ${adminData.status}<br>
+                            Email: ${adminData.email}
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = '<div class="error">❌ Admin user not found in database!</div>';
+                }
+                
+                await signOut(auth);
+                
+            } catch (error) {
+                console.error('Database check error:', error);
+                statusDiv.innerHTML = `<div class="error">❌ Database check failed: ${error.message}</div>`;
+            }
+        };
+    </script>
+</body>
+</html>

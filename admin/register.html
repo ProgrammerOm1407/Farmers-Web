@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Registration - Farmers Web</title>
+    <link rel="stylesheet" href="css/admin-auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-background">
+            <div class="auth-overlay"></div>
+        </div>
+        
+        <div class="auth-content">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="logo">
+                        <h1>Farmers<span>Web</span></h1>
+                        <p>Admin Panel</p>
+                    </div>
+                    <h2>Create Account</h2>
+                    <p>Register for admin access</p>
+                </div>
+
+                <form class="auth-form" id="admin-register-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="first-name">First Name</label>
+                            <div class="input-group">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="first-name" name="firstName" required placeholder="First name">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="last-name">Last Name</label>
+                            <div class="input-group">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="last-name" name="lastName" required placeholder="Last name">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="email" name="email" required placeholder="Enter your email">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <div class="input-group">
+                            <i class="fas fa-phone"></i>
+                            <input type="tel" id="phone" name="phone" required placeholder="Enter your phone number">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role">Requested Role</label>
+                        <div class="input-group">
+                            <i class="fas fa-user-tag"></i>
+                            <select id="role" name="role" required>
+                                <option value="">Select your role</option>
+                                <option value="seller">Seller - Manage my products</option>
+                                <option value="manager">Manager - Manage orders & customers</option>
+                                <option value="admin">Administrator - Full access (requires approval)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="business-name">Business/Farm Name</label>
+                        <div class="input-group">
+                            <i class="fas fa-store"></i>
+                            <input type="text" id="business-name" name="businessName" placeholder="Your business or farm name">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="business-type">Business Type</label>
+                        <div class="input-group">
+                            <i class="fas fa-industry"></i>
+                            <select id="business-type" name="businessType">
+                                <option value="">Select business type</option>
+                                <option value="individual-farmer">Individual Farmer</option>
+                                <option value="farm-cooperative">Farm Cooperative</option>
+                                <option value="agricultural-business">Agricultural Business</option>
+                                <option value="distributor">Distributor</option>
+                                <option value="retailer">Retailer</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <div class="input-group">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="password" name="password" required placeholder="Create password">
+                                <button type="button" class="toggle-password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <div class="input-group">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="confirm-password" name="confirmPassword" required placeholder="Confirm password">
+                                <button type="button" class="toggle-password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Business Description (Optional)</label>
+                        <textarea id="description" name="description" rows="3" placeholder="Tell us about your business or farming operation..."></textarea>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="terms-agreement" required>
+                            <span class="checkmark"></span>
+                            I agree to the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a>
+                        </label>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="marketing-consent">
+                            <span class="checkmark"></span>
+                            I would like to receive marketing communications and updates
+                        </label>
+                    </div>
+
+                    <button type="submit" class="auth-btn">
+                        <span>Create Account</span>
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="login.html">Sign In</a></p>
+                    <p><a href="../index.html">← Back to Customer Site</a></p>
+                </div>
+
+                <!-- Registration Success Modal -->
+                <div class="success-modal" id="success-modal">
+                    <div class="success-modal-content">
+                        <div class="success-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h3>Registration Submitted!</h3>
+                        <p>Your registration request has been submitted successfully. You will receive an email notification once your account is approved.</p>
+                        <div class="success-actions">
+                            <button class="auth-btn" onclick="window.location.href='login.html'">
+                                Go to Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Creating your account...</p>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div class="notification-container" id="notification-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/admin-auth.js"></script>
+</body>
+</html>

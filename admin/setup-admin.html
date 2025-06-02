@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Setup - Farmers Web</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .setup-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .setup-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .setup-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .setup-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .existing-admins {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .existing-admins h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .admin-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .admin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .admin-info {
+            flex: 1;
+        }
+
+        .admin-email {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .admin-role {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-header">
+            <h1>Admin Setup</h1>
+            <p>Add administrators to the Farmers Web system</p>
+        </div>
+
+        <div id="message-container"></div>
+
+        <form id="admin-setup-form">
+            <div class="form-group">
+                <label for="admin-email">Email Address</label>
+                <input type="email" id="admin-email" name="email" required 
+                       placeholder="Enter admin email address">
+            </div>
+
+            <div class="form-group">
+                <label for="admin-name">Full Name</label>
+                <input type="text" id="admin-name" name="fullname" required 
+                       placeholder="Enter full name">
+            </div>
+
+            <div class="form-group">
+                <label for="admin-role">Role</label>
+                <select id="admin-role" name="role" required>
+                    <option value="">Select Role</option>
+                    <option value="admin">Administrator</option>
+                    <option value="manager">Manager</option>
+                    <option value="seller">Seller</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="admin-password">Temporary Password</label>
+                <input type="password" id="admin-password" name="password" required 
+                       placeholder="Enter temporary password" minlength="6">
+            </div>
+
+            <button type="submit" class="btn" id="submit-btn">
+                Add Administrator
+            </button>
+        </form>
+
+        <div class="existing-admins">
+            <h3>Existing Administrators</h3>
+            <div id="admin-list" class="admin-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading administrators...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { 
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { 
+            doc, 
+            setDoc, 
+            collection, 
+            getDocs,
+            serverTimestamp 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { auth, db } from './js/firebase-config.js';
+
+        const USER_ROLES = {
+            ADMIN: 'admin',
+            MANAGER: 'manager',
+            SELLER: 'seller'
+        };
+
+        let currentAdminUser = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExistingAdmins();
+            
+            const form = document.getElementById('admin-setup-form');
+            form.addEventListener('submit', handleAdminSetup);
+        });
+
+        async function handleAdminSetup(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const adminData = {
+                email: formData.get('email').trim().toLowerCase(),
+                fullname: formData.get('fullname').trim(),
+                role: formData.get('role'),
+                password: formData.get('password')
+            };
+
+            // Validation
+            if (!adminData.email || !adminData.fullname || !adminData.role || !adminData.password) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (adminData.password.length < 6) {
+                showMessage('Password must be at least 6 characters long', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.textContent;
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<div class="spinner"></div> Creating Administrator...';
+
+                // Create user in Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(
+                    auth, 
+                    adminData.email, 
+                    adminData.password
+                );
+
+                const user = userCredential.user;
+
+                // Add user to admin collection
+                await setDoc(doc(db, 'admins', user.uid), {
+                    uid: user.uid,
+                    email: adminData.email,
+                    fullname: adminData.fullname,
+                    role: adminData.role,
+                    status: 'active',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    createdBy: currentAdminUser?.uid || 'system'
+                });
+
+                // Sign out the newly created user
+                await signOut(auth);
+
+                showMessage(`Administrator ${adminData.fullname} created successfully!`, 'success');
+                
+                // Reset form
+                event.target.reset();
+                
+                // Reload admin list
+                await loadExistingAdmins();
+
+            } catch (error) {
+                console.error('Error creating administrator:', error);
+                
+                let errorMessage = 'Failed to create administrator';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Email address is already in use';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Invalid email address';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = 'Password is too weak';
+                }
+                
+                showMessage(errorMessage, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        }
+
+        async function loadExistingAdmins() {
+            const adminList = document.getElementById('admin-list');
+            
+            try {
+                adminList.innerHTML = '<div class="loading"><div class="spinner"></div> Loading administrators...</div>';
+                
+                const querySnapshot = await getDocs(collection(db, 'admins'));
+                const admins = [];
+                
+                querySnapshot.forEach((doc) => {
+                    admins.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                if (admins.length === 0) {
+                    adminList.innerHTML = '<div class="loading">No administrators found</div>';
+                    return;
+                }
+
+                // Sort by creation date
+                admins.sort((a, b) => {
+                    const dateA = a.createdAt?.toDate?.() || new Date(0);
+                    const dateB = b.createdAt?.toDate?.() || new Date(0);
+                    return dateB - dateA;
+                });
+
+                const adminsHTML = admins.map(admin => `
+                    <div class="admin-item">
+                        <div class="admin-info">
+                            <div class="admin-email">${admin.email}</div>
+                            <div class="admin-role">${admin.role}</div>
+                        </div>
+                        <div class="admin-status">
+                            <span style="color: ${admin.status === 'active' ? '#28a745' : '#dc3545'}">
+                                ${admin.status}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+
+                adminList.innerHTML = adminsHTML;
+
+            } catch (error) {
+                console.error('Error loading administrators:', error);
+                adminList.innerHTML = '<div class="loading" style="color: #dc3545;">Failed to load administrators</div>';
+            }
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="message ${type}">${message}</div>`;
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    container.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        // Quick setup for the specific user
+        window.quickSetupUser = function() {
+            document.getElementById('admin-email').value = 'programmerom2006@gmail.com';
+            document.getElementById('admin-name').value = 'Admin User';
+            document.getElementById('admin-role').value = 'admin';
+            document.getElementById('admin-password').value = 'admin123';
+            
+            showMessage('Quick setup filled. Click "Add Administrator" to create the user.', 'info');
+        };
+
+        // Add quick setup button
+        document.addEventListener('DOMContentLoaded', function() {
+            const setupHeader = document.querySelector('.setup-header');
+            const quickBtn = document.createElement('button');
+            quickBtn.type = 'button';
+            quickBtn.className = 'btn';
+            quickBtn.style.marginTop = '10px';
+            quickBtn.style.background = '#28a745';
+            quickBtn.textContent = 'Quick Setup for programmerom2006@gmail.com';
+            quickBtn.onclick = quickSetupUser;
+            
+            setupHeader.appendChild(quickBtn);
+        });
+    </script>
+</body>
+</html>

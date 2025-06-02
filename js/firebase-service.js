@@ -344,18 +344,57 @@ export async function getCustomerByEmail(email) {
 // ==================== PRODUCT OPERATIONS ====================
 
 /**
- * Get all products
+ * Get all active products for customers
+ * @param {Object} filters - Optional filters
  * @returns {Promise<Array>} - Array of products
  */
-export async function getProducts() {
+export async function getProducts(filters = {}) {
   try {
-    const querySnapshot = await getDocs(collection(db, 'products'));
+    let q = collection(db, 'products');
+    
+    // Only show active products to customers
+    q = query(q, where('status', '==', 'active'));
+    
+    // Apply category filter if provided
+    if (filters.category) {
+      q = query(q, where('category', '==', filters.category));
+    }
+    
+    // Apply sorting
+    if (filters.sortBy) {
+      switch (filters.sortBy) {
+        case 'price-low':
+          q = query(q, orderBy('price', 'asc'));
+          break;
+        case 'price-high':
+          q = query(q, orderBy('price', 'desc'));
+          break;
+        case 'newest':
+          q = query(q, orderBy('createdAt', 'desc'));
+          break;
+        case 'popular':
+          q = query(q, orderBy('sales', 'desc'));
+          break;
+        default:
+          q = query(q, orderBy('createdAt', 'desc'));
+      }
+    } else {
+      q = query(q, orderBy('createdAt', 'desc'));
+    }
+    
+    const querySnapshot = await getDocs(q);
     const products = [];
     
     querySnapshot.forEach((doc) => {
+      const productData = doc.data();
       products.push({
         id: doc.id,
-        ...doc.data()
+        ...productData,
+        // Ensure backward compatibility with existing UI
+        oldPrice: productData.originalPrice || null,
+        unit: productData.unit || 'kg',
+        organic: productData.organic || false,
+        popularity: productData.rating || 0
       });
     });
     
@@ -367,25 +406,128 @@ export async function getProducts() {
 }
 
 /**
- * Add a new product
- * @param {Object} productData - Product data
- * @returns {Promise<string>} - Product ID
+ * Get a single product by ID
+ * @param {string} productId - Product ID
+ * @returns {Promise<Object>} - Product data
  */
-export async function addProduct(productData) {
+export async function getProduct(productId) {
   try {
-    const productWithTimestamp = {
-      ...productData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    };
+    const docRef = doc(db, 'products', productId);
+    const docSnap = await getDoc(docRef);
     
-    const docRef = await addDoc(collection(db, 'products'), productWithTimestamp);
-    
-    console.log('Product added with ID: ', docRef.id);
-    return docRef.id;
+    if (docSnap.exists()) {
+      const productData = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...productData,
+        // Ensure backward compatibility
+        oldPrice: productData.originalPrice || null,
+        unit: productData.unit || 'kg',
+        organic: productData.organic || false,
+        popularity: productData.rating || 0
+      };
+    } else {
+      throw new Error('Product not found');
+    }
   } catch (error) {
-    console.error('Error adding product: ', error);
-    throw new Error('Failed to add product: ' + error.message);
+    console.error('Error getting product: ', error);
+    throw new Error('Failed to get product: ' + error.message);
+  }
+}
+
+/**
+ * Search products
+ * @param {string} searchTerm - Search term
+ * @param {Object} filters - Additional filters
+ * @returns {Promise<Array>} - Array of matching products
+ */
+export async function searchProducts(searchTerm, filters = {}) {
+  try {
+    // Get all active products first (Firestore doesn't support full-text search natively)
+    const products = await getProducts(filters);
+    
+    if (!searchTerm) {
+      return products;
+    }
+    
+    const term = searchTerm.toLowerCase();
+    return products.filter(product => 
+      product.name.toLowerCase().includes(term) ||
+      product.description?.toLowerCase().includes(term) ||
+      product.category.toLowerCase().includes(term)
+    );
+  } catch (error) {
+    console.error('Error searching products: ', error);
+    throw new Error('Failed to search products: ' + error.message);
+  }
+}
+
+/**
+ * Get featured products
+ * @returns {Promise<Array>} - Array of featured products
+ */
+export async function getFeaturedProducts() {
+  try {
+    const q = query(
+      collection(db, 'products'),
+      where('status', '==', 'active'),
+      where('featured', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(6)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const products = [];
+    
+    querySnapshot.forEach((doc) => {
+      const productData = doc.data();
+      products.push({
+        id: doc.id,
+        ...productData,
+        oldPrice: productData.originalPrice || null,
+        unit: productData.unit || 'kg',
+        organic: productData.organic || false,
+        popularity: productData.rating || 0
+      });
+    });
+    
+    return products;
+  } catch (error) {
+    console.error('Error getting featured products: ', error);
+    throw new Error('Failed to get featured products: ' + error.message);
+  }
+}
+
+/**
+ * Get product categories
+ * @returns {Promise<Array>} - Array of categories
+ */
+export async function getProductCategories() {
+  try {
+    const products = await getProducts();
+    const categories = [...new Set(products.map(p => p.category))];
+    return categories.sort();
+  } catch (error) {
+    console.error('Error getting categories: ', error);
+    throw new Error('Failed to get categories: ' + error.message);
+  }
+}
+
+/**
+ * Update product view count
+ * @param {string} productId - Product ID
+ * @returns {Promise<void>}
+ */
+export async function incrementProductViews(productId) {
+  try {
+    const productRef = doc(db, 'products', productId);
+    await updateDoc(productRef, {
+      views: increment(1),
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating product views: ', error);
+    // Don't throw error for analytics to avoid breaking user experience
   }
 }
 

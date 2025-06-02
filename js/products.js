@@ -1,6 +1,20 @@
 // Products page functionality for Farmers Web
+import { 
+    getProducts, 
+    searchProducts, 
+    getProductCategories,
+    incrementProductViews 
+} from './firebase-service.js';
+
+// Global variables
+let allProducts = [];
+let filteredProducts = [];
+let currentPage = 1;
+let itemsPerPage = 12;
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Products page loaded');
+    
     // Filter toggle for mobile
     const filterToggle = document.getElementById('filter-toggle');
     const filterOptions = document.querySelector('.filter-options');
@@ -17,12 +31,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (priceRange && priceValue) {
         priceRange.addEventListener('input', function() {
-            priceValue.textContent = `₹0 - ₹${this.value}`;
+            priceValue.textContent = `$0 - $${this.value}`;
         });
     }
     
-    // Load products
+    // Load products and categories
     loadProducts();
+    loadCategories();
     
     // Search functionality
     const searchInput = document.getElementById('search-input');
@@ -30,12 +45,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (searchInput && searchBtn) {
         searchBtn.addEventListener('click', function() {
-            filterProducts();
+            performSearch();
         });
         
         searchInput.addEventListener('keyup', function(e) {
             if (e.key === 'Enter') {
-                filterProducts();
+                performSearch();
             }
         });
     }
@@ -66,441 +81,494 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Pagination
-    const paginationButtons = document.querySelectorAll('.pagination-btn');
-    
-    if (paginationButtons.length > 0) {
-        paginationButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const page = this.getAttribute('data-page');
-                
-                if (page === 'prev') {
-                    const activePage = document.querySelector('.pagination-btn.active');
-                    const prevPage = activePage.previousElementSibling;
-                    
-                    if (prevPage && prevPage.getAttribute('data-page') !== 'prev') {
-                        changePage(prevPage.getAttribute('data-page'));
-                    }
-                } else if (page === 'next') {
-                    const activePage = document.querySelector('.pagination-btn.active');
-                    const nextPage = activePage.nextElementSibling;
-                    
-                    if (nextPage && nextPage.getAttribute('data-page') !== 'next') {
-                        changePage(nextPage.getAttribute('data-page'));
-                    }
-                } else {
-                    changePage(page);
-                }
-            });
-        });
-    }
+    initializePagination();
 });
 
-// Function to load products
-function loadProducts() {
+// Function to load products from Firebase
+async function loadProducts() {
     const productsContainer = document.getElementById('products-container');
     
     if (!productsContainer) return;
     
-    // Sample product data - in a real application, this would come from a database
-    const allProducts = [
-        {
-            id: 1,
-            name: 'Organic Basmati Rice',
-            price: 199,
-            oldPrice: 249,
-            image: '../images/products/basmati-rice.jpg',
-            unit: '1 kg',
-            category: 'rice',
-            organic: true,
-            popularity: 5,
-            date: '2023-01-15'
-        },
-        {
-            id: 2,
-            name: 'Premium Wheat Flour',
-            price: 89,
-            oldPrice: 110,
-            image: '../images/products/wheat-flour.jpg',
-            unit: '1 kg',
-            category: 'wheat',
-            organic: false,
-            popularity: 4,
-            date: '2023-02-20'
-        },
-        {
-            id: 3,
-            name: 'Organic Brown Rice',
-            price: 159,
-            oldPrice: 189,
-            image: '../images/products/brown-rice.jpg',
-            unit: '1 kg',
-            category: 'rice',
-            organic: true,
-            popularity: 4.5,
-            date: '2023-03-10'
-        },
-        {
-            id: 4,
-            name: 'Organic Quinoa',
-            price: 299,
-            oldPrice: 349,
-            image: '../images/products/quinoa.jpg',
-            unit: '500 g',
-            category: 'millets',
-            organic: true,
-            popularity: 4.8,
-            date: '2023-01-05'
-        },
-        {
-            id: 5,
-            name: 'Toor Dal',
-            price: 129,
-            oldPrice: 149,
-            image: '../images/products/toor-dal.jpg',
-            unit: '1 kg',
-            category: 'pulses',
-            organic: false,
-            popularity: 4.2,
-            date: '2023-04-15'
-        },
-        {
-            id: 6,
-            name: 'Moong Dal',
-            price: 139,
-            oldPrice: 159,
-            image: '../images/products/moong-dal.jpg',
-            unit: '1 kg',
-            category: 'pulses',
-            organic: false,
-            popularity: 4.3,
-            date: '2023-03-25'
-        },
-        {
-            id: 7,
-            name: 'Organic Ragi Flour',
-            price: 119,
-            oldPrice: 139,
-            image: '../images/products/ragi-flour.jpg',
-            unit: '1 kg',
-            category: 'millets',
-            organic: true,
-            popularity: 4.6,
-            date: '2023-02-10'
-        },
-        {
-            id: 8,
-            name: 'Sona Masoori Rice',
-            price: 149,
-            oldPrice: 179,
-            image: '../images/products/sona-masoori.jpg',
-            unit: '1 kg',
-            category: 'rice',
-            organic: false,
-            popularity: 4.4,
-            date: '2023-05-05'
-        },
-        {
-            id: 9,
-            name: 'Organic Chana Dal',
-            price: 119,
-            oldPrice: 139,
-            image: '../images/products/chana-dal.jpg',
-            unit: '1 kg',
-            category: 'pulses',
-            organic: true,
-            popularity: 4.1,
-            date: '2023-04-20'
-        },
-        {
-            id: 10,
-            name: 'Atta Whole Wheat Flour',
-            price: 79,
-            oldPrice: 99,
-            image: '../images/products/atta.jpg',
-            unit: '1 kg',
-            category: 'wheat',
-            organic: false,
-            popularity: 4.7,
-            date: '2023-05-15'
-        },
-        {
-            id: 11,
-            name: 'Organic Jowar Flour',
-            price: 109,
-            oldPrice: 129,
-            image: '../images/products/jowar-flour.jpg',
-            unit: '1 kg',
-            category: 'millets',
-            organic: true,
-            popularity: 4.0,
-            date: '2023-03-15'
-        },
-        {
-            id: 12,
-            name: 'Urad Dal',
-            price: 149,
-            oldPrice: 169,
-            image: '../images/products/urad-dal.jpg',
-            unit: '1 kg',
-            category: 'pulses',
-            organic: false,
-            popularity: 4.2,
-            date: '2023-04-10'
-        }
-    ];
-    
-    // Store products in localStorage for filtering
-    localStorage.setItem('allProducts', JSON.stringify(allProducts));
-    
-    // Display products (first page)
-    displayProducts(allProducts, 1);
+    try {
+        // Show loading state
+        showLoadingState();
+        
+        // Get products from Firebase
+        allProducts = await getProducts();
+        filteredProducts = [...allProducts];
+        
+        console.log('Products loaded:', allProducts);
+        
+        // Render products
+        renderProducts();
+        updateProductCount();
+        
+    } catch (error) {
+        console.error('Error loading products:', error);
+        showErrorState('Failed to load products. Please try again.');
+    }
 }
 
-// Function to display products
-function displayProducts(products, page) {
-    const productsContainer = document.getElementById('products-container');
+// Function to load categories
+async function loadCategories() {
+    const categoryFilter = document.getElementById('category-filter');
     
-    if (!productsContainer) return;
+    if (!categoryFilter) return;
     
-    // Clear container
-    productsContainer.innerHTML = '';
-    
-    // Pagination
-    const productsPerPage = 6;
-    const startIndex = (page - 1) * productsPerPage;
-    const endIndex = startIndex + productsPerPage;
-    const paginatedProducts = products.slice(startIndex, endIndex);
-    
-    if (paginatedProducts.length === 0) {
-        productsContainer.innerHTML = '<div class="no-products"><p>No products found matching your criteria.</p></div>';
-        return;
-    }
-    
-    // Create HTML for each product
-    paginatedProducts.forEach(product => {
-        const productCard = document.createElement('div');
-        productCard.className = 'product-card';
+    try {
+        const categories = await getProductCategories();
         
-        productCard.innerHTML = `
-            <div class="product-image">
-                <img src="${product.image}" alt="${product.name}" onerror="this.src='../images/product-placeholder.jpg'">
-                ${product.organic ? '<span class="organic-badge">Organic</span>' : ''}
-            </div>
-            <div class="product-info">
-                <h3>${product.name}</h3>
-                <div class="product-price">
-                    <span class="price">₹${product.price} <small>/ ${product.unit}</small></span>
-                    <span class="old-price">₹${product.oldPrice}</span>
-                </div>
-                <button class="btn primary-btn add-to-cart" data-id="${product.id}" data-name="${product.name}" data-price="${product.price}" data-image="${product.image}">
-                    Add to Cart
-                </button>
-            </div>
-        `;
+        // Clear existing options (except "All Categories")
+        const firstOption = categoryFilter.firstElementChild;
+        categoryFilter.innerHTML = '';
+        categoryFilter.appendChild(firstOption);
         
-        productsContainer.appendChild(productCard);
-    });
-    
-    // Update pagination UI
-    updatePagination(products.length, productsPerPage, page);
-    
-    // Add event listeners to the "Add to Cart" buttons
-    const addToCartButtons = document.querySelectorAll('.add-to-cart');
-    addToCartButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const productId = this.getAttribute('data-id');
-            const productName = this.getAttribute('data-name');
-            const productPrice = this.getAttribute('data-price');
-            const productImage = this.getAttribute('data-image');
-            
-            addToCart({
-                id: productId,
-                name: productName,
-                price: productPrice,
-                image: productImage,
-                quantity: 1
-            });
-            
-            // Show a notification
-            showNotification(`${productName} added to cart!`);
-        });
-    });
-}
-
-// Function to update pagination UI
-function updatePagination(totalProducts, productsPerPage, currentPage) {
-    const pagination = document.getElementById('pagination');
-    
-    if (!pagination) return;
-    
-    const totalPages = Math.ceil(totalProducts / productsPerPage);
-    
-    // Hide pagination if only one page
-    if (totalPages <= 1) {
-        pagination.style.display = 'none';
-        return;
-    } else {
-        pagination.style.display = 'flex';
-    }
-    
-    // Update pagination numbers
-    const paginationNumbers = pagination.querySelector('.pagination-numbers');
-    paginationNumbers.innerHTML = '';
-    
-    // Determine which page numbers to show
-    let startPage = Math.max(1, currentPage - 1);
-    let endPage = Math.min(totalPages, startPage + 2);
-    
-    // Adjust if we're at the end
-    if (endPage - startPage < 2) {
-        startPage = Math.max(1, endPage - 2);
-    }
-    
-    // Create page buttons
-    for (let i = startPage; i <= endPage; i++) {
-        const pageButton = document.createElement('button');
-        pageButton.className = `pagination-btn ${i == currentPage ? 'active' : ''}`;
-        pageButton.setAttribute('data-page', i);
-        pageButton.textContent = i;
-        
-        pageButton.addEventListener('click', function() {
-            changePage(i);
+        // Add category options
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+            categoryFilter.appendChild(option);
         });
         
-        paginationNumbers.appendChild(pageButton);
+    } catch (error) {
+        console.error('Error loading categories:', error);
     }
-    
-    // Update prev/next buttons
-    const prevButton = pagination.querySelector('[data-page="prev"]');
-    const nextButton = pagination.querySelector('[data-page="next"]');
-    
-    prevButton.disabled = currentPage === 1;
-    nextButton.disabled = currentPage === totalPages;
 }
 
-// Function to change page
-function changePage(page) {
-    // Get filtered products from localStorage
-    const filteredProducts = JSON.parse(localStorage.getItem('filteredProducts')) || JSON.parse(localStorage.getItem('allProducts'));
+// Function to perform search
+async function performSearch() {
+    const searchInput = document.getElementById('search-input');
+    const searchTerm = searchInput ? searchInput.value.trim() : '';
     
-    // Display products for the selected page
-    displayProducts(filteredProducts, parseInt(page));
+    try {
+        showLoadingState();
+        
+        const filters = getCurrentFilters();
+        filteredProducts = await searchProducts(searchTerm, filters);
+        
+        currentPage = 1;
+        renderProducts();
+        updateProductCount();
+        
+    } catch (error) {
+        console.error('Error searching products:', error);
+        showErrorState('Search failed. Please try again.');
+    }
+}
+
+// Function to get current filter values
+function getCurrentFilters() {
+    const categoryFilter = document.getElementById('category-filter');
+    const sortFilter = document.getElementById('sort-filter');
     
-    // Scroll to top of products section
-    document.querySelector('.products-section').scrollIntoView({ behavior: 'smooth' });
+    return {
+        category: categoryFilter ? categoryFilter.value : '',
+        sortBy: sortFilter ? sortFilter.value : 'newest'
+    };
 }
 
 // Function to filter products
-function filterProducts() {
-    // Get filter values
-    const searchValue = document.getElementById('search-input').value.toLowerCase();
-    const categoryValue = document.getElementById('category-filter').value;
-    const sortValue = document.getElementById('sort-filter').value;
-    const priceValue = parseInt(document.getElementById('price-range').value);
-    
-    // Get all products from localStorage
-    const allProducts = JSON.parse(localStorage.getItem('allProducts'));
-    
-    // Filter products
-    let filteredProducts = allProducts.filter(product => {
-        // Search filter
-        const matchesSearch = searchValue === '' || product.name.toLowerCase().includes(searchValue);
+async function filterProducts() {
+    try {
+        showLoadingState();
         
-        // Category filter
-        const matchesCategory = categoryValue === 'all' || 
-                               (categoryValue === 'organic' && product.organic) || 
-                               product.category === categoryValue;
+        const filters = getCurrentFilters();
+        const priceRange = document.getElementById('price-range');
+        const maxPrice = priceRange ? parseInt(priceRange.value) : 1000;
         
-        // Price filter
-        const matchesPrice = product.price <= priceValue;
+        // Start with all products
+        let filtered = [...allProducts];
         
-        return matchesSearch && matchesCategory && matchesPrice;
-    });
-    
-    // Sort products
-    switch (sortValue) {
-        case 'price-low':
-            filteredProducts.sort((a, b) => a.price - b.price);
-            break;
-        case 'price-high':
-            filteredProducts.sort((a, b) => b.price - a.price);
-            break;
-        case 'newest':
-            filteredProducts.sort((a, b) => new Date(b.date) - new Date(a.date));
-            break;
-        default: // popularity
-            filteredProducts.sort((a, b) => b.popularity - a.popularity);
+        // Apply category filter
+        if (filters.category) {
+            filtered = filtered.filter(product => product.category === filters.category);
+        }
+        
+        // Apply price filter
+        filtered = filtered.filter(product => product.price <= maxPrice);
+        
+        // Apply sorting
+        filtered = sortProducts(filtered, filters.sortBy);
+        
+        filteredProducts = filtered;
+        currentPage = 1;
+        
+        renderProducts();
+        updateProductCount();
+        
+    } catch (error) {
+        console.error('Error filtering products:', error);
+        showErrorState('Filter failed. Please try again.');
     }
-    
-    // Store filtered products in localStorage
-    localStorage.setItem('filteredProducts', JSON.stringify(filteredProducts));
-    
-    // Display filtered products (first page)
-    displayProducts(filteredProducts, 1);
 }
 
-// Function to show notification
-function showNotification(message) {
-    // Check if a notification container already exists
-    let notificationContainer = document.querySelector('.notification-container');
+// Function to sort products
+function sortProducts(products, sortBy) {
+    const sorted = [...products];
     
-    // If not, create one
-    if (!notificationContainer) {
-        notificationContainer = document.createElement('div');
-        notificationContainer.className = 'notification-container';
-        document.body.appendChild(notificationContainer);
-        
-        // Add styles
-        notificationContainer.style.position = 'fixed';
-        notificationContainer.style.bottom = '20px';
-        notificationContainer.style.right = '20px';
-        notificationContainer.style.zIndex = '1000';
+    switch (sortBy) {
+        case 'price-low':
+            return sorted.sort((a, b) => a.price - b.price);
+        case 'price-high':
+            return sorted.sort((a, b) => b.price - a.price);
+        case 'name-asc':
+            return sorted.sort((a, b) => a.name.localeCompare(b.name));
+        case 'name-desc':
+            return sorted.sort((a, b) => b.name.localeCompare(a.name));
+        case 'popular':
+            return sorted.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        case 'newest':
+        default:
+            return sorted.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(a.date || 0);
+                const dateB = b.createdAt?.toDate?.() || new Date(b.date || 0);
+                return dateB - dateA;
+            });
+    }
+}
+
+// Function to render products
+function renderProducts() {
+    const productsContainer = document.getElementById('products-container');
+    
+    if (!productsContainer) return;
+    
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageProducts = filteredProducts.slice(startIndex, endIndex);
+    
+    if (pageProducts.length === 0) {
+        productsContainer.innerHTML = `
+            <div class="no-products">
+                <i class="fas fa-search"></i>
+                <h3>No products found</h3>
+                <p>Try adjusting your search or filter criteria</p>
+            </div>
+        `;
+        return;
     }
     
-    // Create notification
+    // Generate product HTML
+    const productsHTML = pageProducts.map(product => createProductHTML(product)).join('');
+    productsContainer.innerHTML = productsHTML;
+    
+    // Update pagination
+    updatePagination();
+    
+    // Add click handlers for product cards
+    addProductClickHandlers();
+}
+
+// Function to create product HTML
+function createProductHTML(product) {
+    const discountPercentage = product.oldPrice ? 
+        Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) : 0;
+    
+    const ratingStars = generateStarRating(product.popularity || 0);
+    
+    return `
+        <div class="product-card" data-product-id="${product.id}">
+            <div class="product-image">
+                <img src="${product.imageUrl || product.image || '../images/products/placeholder.jpg'}" 
+                     alt="${product.name}" 
+                     onerror="this.src='../images/products/placeholder.jpg'">
+                ${product.organic ? '<span class="organic-badge">Organic</span>' : ''}
+                ${discountPercentage > 0 ? `<span class="discount-badge">${discountPercentage}% OFF</span>` : ''}
+            </div>
+            <div class="product-info">
+                <h3 class="product-name">${product.name}</h3>
+                <div class="product-rating">
+                    ${ratingStars}
+                    <span class="rating-count">(${product.reviewCount || 0})</span>
+                </div>
+                <div class="product-price">
+                    <span class="current-price">$${product.price}</span>
+                    ${product.oldPrice ? `<span class="old-price">$${product.oldPrice}</span>` : ''}
+                </div>
+                <div class="product-unit">${product.unit}</div>
+                <div class="product-actions">
+                    <button class="btn btn-primary add-to-cart" data-product-id="${product.id}">
+                        <i class="fas fa-shopping-cart"></i>
+                        Add to Cart
+                    </button>
+                    <button class="btn btn-outline view-product" data-product-id="${product.id}">
+                        <i class="fas fa-eye"></i>
+                        View
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Function to generate star rating HTML
+function generateStarRating(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 !== 0;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    
+    let starsHTML = '';
+    
+    // Full stars
+    for (let i = 0; i < fullStars; i++) {
+        starsHTML += '<i class="fas fa-star"></i>';
+    }
+    
+    // Half star
+    if (hasHalfStar) {
+        starsHTML += '<i class="fas fa-star-half-alt"></i>';
+    }
+    
+    // Empty stars
+    for (let i = 0; i < emptyStars; i++) {
+        starsHTML += '<i class="far fa-star"></i>';
+    }
+    
+    return starsHTML;
+}
+
+// Function to add click handlers to product cards
+function addProductClickHandlers() {
+    // Add to cart buttons
+    const addToCartBtns = document.querySelectorAll('.add-to-cart');
+    addToCartBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const productId = this.dataset.productId;
+            addToCart(productId);
+        });
+    });
+    
+    // View product buttons
+    const viewProductBtns = document.querySelectorAll('.view-product');
+    viewProductBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const productId = this.dataset.productId;
+            viewProduct(productId);
+        });
+    });
+    
+    // Product card click (view product)
+    const productCards = document.querySelectorAll('.product-card');
+    productCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const productId = this.dataset.productId;
+            viewProduct(productId);
+        });
+    });
+}
+
+// Function to add product to cart
+function addToCart(productId) {
+    const product = allProducts.find(p => p.id === productId);
+    
+    if (!product) {
+        showNotification('Product not found', 'error');
+        return;
+    }
+    
+    // Get existing cart from localStorage
+    let cart = JSON.parse(localStorage.getItem('farmersWebCart') || '[]');
+    
+    // Check if product already in cart
+    const existingItem = cart.find(item => item.id === productId);
+    
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.imageUrl || product.image,
+            unit: product.unit,
+            quantity: 1
+        });
+    }
+    
+    // Save cart to localStorage
+    localStorage.setItem('farmersWebCart', JSON.stringify(cart));
+    
+    // Update cart UI
+    updateCartUI();
+    
+    // Show notification
+    showNotification(`${product.name} added to cart`, 'success');
+}
+
+// Function to view product details
+function viewProduct(productId) {
+    // Increment view count
+    incrementProductViews(productId);
+    
+    // Redirect to product detail page (you can implement this)
+    console.log('View product:', productId);
+    showNotification('Product detail page to be implemented', 'info');
+}
+
+// Function to update cart UI
+function updateCartUI() {
+    const cart = JSON.parse(localStorage.getItem('farmersWebCart') || '[]');
+    const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+    
+    const cartCountElement = document.querySelector('.cart-count');
+    if (cartCountElement) {
+        cartCountElement.textContent = cartCount;
+    }
+}
+
+// Function to show loading state
+function showLoadingState() {
+    const productsContainer = document.getElementById('products-container');
+    if (productsContainer) {
+        productsContainer.innerHTML = `
+            <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading products...</p>
+            </div>
+        `;
+    }
+}
+
+// Function to show error state
+function showErrorState(message) {
+    const productsContainer = document.getElementById('products-container');
+    if (productsContainer) {
+        productsContainer.innerHTML = `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Oops! Something went wrong</h3>
+                <p>${message}</p>
+                <button class="btn btn-primary" onclick="loadProducts()">Try Again</button>
+            </div>
+        `;
+    }
+}
+
+// Function to update product count
+function updateProductCount() {
+    const productCount = document.getElementById('product-count');
+    if (productCount) {
+        productCount.textContent = `${filteredProducts.length} products found`;
+    }
+}
+
+// Function to initialize pagination
+function initializePagination() {
+    // This will be called when pagination buttons are clicked
+    window.changePage = function(page) {
+        currentPage = page;
+        renderProducts();
+        
+        // Scroll to top of products
+        const productsSection = document.querySelector('.products-section');
+        if (productsSection) {
+            productsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+}
+
+// Function to update pagination
+function updatePagination() {
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+    const paginationContainer = document.querySelector('.pagination');
+    
+    if (!paginationContainer || totalPages <= 1) {
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
+        return;
+    }
+    
+    paginationContainer.style.display = 'flex';
+    
+    let paginationHTML = '';
+    
+    // Previous button
+    paginationHTML += `
+        <button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" 
+                data-page="prev" ${currentPage === 1 ? 'disabled' : ''}>
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    `;
+    
+    // Page numbers
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `
+            <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+                    data-page="${i}" onclick="changePage(${i})">
+                ${i}
+            </button>
+        `;
+    }
+    
+    // Next button
+    paginationHTML += `
+        <button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" 
+                data-page="next" ${currentPage === totalPages ? 'disabled' : ''}>
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+    
+    paginationContainer.innerHTML = paginationHTML;
+    
+    // Add event listeners for prev/next buttons
+    const prevBtn = paginationContainer.querySelector('[data-page="prev"]');
+    const nextBtn = paginationContainer.querySelector('[data-page="next"]');
+    
+    if (prevBtn && !prevBtn.disabled) {
+        prevBtn.addEventListener('click', () => changePage(currentPage - 1));
+    }
+    
+    if (nextBtn && !nextBtn.disabled) {
+        nextBtn.addEventListener('click', () => changePage(currentPage + 1));
+    }
+}
+
+// Function to show notifications
+function showNotification(message, type = 'info') {
+    // Create notification element
     const notification = document.createElement('div');
-    notification.className = 'notification glass-effect';
+    notification.className = `notification ${type}`;
     notification.innerHTML = `
         <div class="notification-content">
-            <i class="fas fa-check-circle"></i>
             <span>${message}</span>
+            <button class="notification-close">&times;</button>
         </div>
     `;
     
-    // Add styles
-    notification.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-    notification.style.backdropFilter = 'blur(10px)';
-    notification.style.padding = '15px 20px';
-    notification.style.borderRadius = '10px';
-    notification.style.marginTop = '10px';
-    notification.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-    notification.style.display = 'flex';
-    notification.style.alignItems = 'center';
-    notification.style.justifyContent = 'space-between';
-    notification.style.animation = 'slideIn 0.3s forwards';
+    // Add to page
+    document.body.appendChild(notification);
     
-    // Add animation keyframes
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Add to container
-    notificationContainer.appendChild(notification);
-    
-    // Remove after 3 seconds
+    // Auto remove after 3 seconds
     setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s forwards';
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
     }, 3000);
+    
+    // Remove on click
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.addEventListener('click', () => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    });
 }
+
+// Initialize cart UI on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCartUI();
+});
