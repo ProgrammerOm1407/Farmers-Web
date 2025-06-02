@@ -110,18 +110,24 @@ body {
 
 /* User profile button styling */
 .user-profile-btn {
-    background: var(--glass-bg);
-    color: var(--text-color);
-    border: 1px solid var(--glass-border);
+    background: var(--primary-color);
+    color: var(--light-text);
+    border: none;
     padding: 8px 20px;
-    border-radius: 5px;
+    border-radius: 30px;
     font-weight: 500;
-    box-shadow: var(--glass-shadow);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
     position: relative;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: var(--transition);
+    text-decoration: none;
+    min-height: 44px;
+    white-space: nowrap;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .user-profile-btn:hover {
@@ -137,6 +143,7 @@ body {
     font-weight: 900;
     margin-right: 8px;
     color: var(--light-text);
+    font-size: 14px;
 }
 
 .user-profile-btn::after {
@@ -970,17 +977,31 @@ footer {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    /* z-index: 1000; */
     display: none;
     opacity: 0;
     transition: opacity 0.3s ease;
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
+    pointer-events: auto;
 }
 
 .overlay.active {
     display: block;
     opacity: 1;
+}
+
+/* Ensure overlay doesn't block navigation menu */
+@media (max-width: 992px) {
+    .overlay.active {
+        background: linear-gradient(to right, transparent 0%, transparent 300px, rgba(0, 0, 0, 0.5) 300px, rgba(0, 0, 0, 0.5) 100%);
+    }
+}
+
+@media (max-width: 768px) {
+    .overlay.active {
+        background: linear-gradient(to right, transparent 0%, transparent 280px, rgba(0, 0, 0, 0.5) 280px, rgba(0, 0, 0, 0.5) 100%);
+    }
 }
 
 /* Touch Device Optimizations */
@@ -1421,11 +1442,12 @@ footer {
         width: 300px;
         height: 100vh;
         background: white;
-        z-index: 1001;
+        z-index: 1010;
         transition: all 0.3s ease-in-out;
         box-shadow: 5px 0 20px rgba(0, 0, 0, 0.15);
         overflow-y: auto;
         padding-top: 70px;
+        pointer-events: auto;
     }
     
     nav.active {
@@ -1456,6 +1478,10 @@ footer {
         color: var(--text-color);
         text-decoration: none;
         transition: all 0.3s ease;
+        position: relative;
+        z-index: 1015;
+        pointer-events: auto;
+        touch-action: manipulation;
     }
     
     nav ul li a:hover,
@@ -1483,8 +1509,9 @@ footer {
         border-radius: 50%;
         background: #f8f9fa;
         transition: all 0.3s ease;
-        z-index: 1002;
+        z-index: 1020;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        pointer-events: auto;
     }
     
     nav::before:hover {
@@ -1506,6 +1533,24 @@ footer {
         padding: 8px 16px;
         font-size: 14px;
         min-height: 40px;
+    }
+    
+    .user-profile-btn {
+        padding: 8px 16px;
+        font-size: 14px;
+        min-height: 40px;
+        max-width: 120px;
+        border-radius: 20px;
+    }
+    
+    .user-profile-btn::before {
+        font-size: 12px;
+        margin-right: 6px;
+    }
+    
+    .user-profile-btn::after {
+        font-size: 10px;
+        margin-left: 6px;
     }
     
     .cart-icon {
@@ -1590,11 +1635,16 @@ footer {
         width: 280px;
         background: white;
         border-radius: 0;
+        z-index: 1010;
     }
     
     nav ul li a {
         padding: 16px 20px;
         font-size: 15px;
+        position: relative;
+        z-index: 1015;
+        pointer-events: auto;
+        touch-action: manipulation;
     }
     
     /* Mobile buttons */
@@ -1607,6 +1657,24 @@ footer {
         padding: 6px 12px;
         font-size: 13px;
         min-height: 36px;
+    }
+    
+    .user-profile-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+        min-height: 36px;
+        max-width: 100px;
+        border-radius: 18px;
+    }
+    
+    .user-profile-btn::before {
+        font-size: 11px;
+        margin-right: 4px;
+    }
+    
+    .user-profile-btn::after {
+        font-size: 9px;
+        margin-left: 4px;
     }
     
     .cart-icon {

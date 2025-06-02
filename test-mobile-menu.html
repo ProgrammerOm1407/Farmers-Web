@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Menu Test - Farmers Web</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="glass-effect">
+            <div class="logo">
+                <h1>Farmers<span>Web</span></h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html" class="active">Home</a></li>
+                    <li><a href="pages/products.html">Products</a></li>
+                    <li><a href="pages/about.html">About Us</a></li>
+                    <li><a href="pages/contact.html">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="nav-buttons">
+                <a href="pages/login.html" class="btn login-btn">Login</a>
+                <a href="#" class="cart-icon" id="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+            <div class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </div>
+        </header>
+
+        <!-- Test Content -->
+        <section style="padding: 40px 20px; text-align: center;">
+            <h2>Mobile Menu Test Page</h2>
+            <p>This page is for testing the mobile menu functionality and username alignment.</p>
+            <p>Try resizing your browser window or using mobile device tools to test the mobile menu.</p>
+            
+            <div style="margin: 20px 0;">
+                <button onclick="simulateLogin()" class="btn primary-btn">Simulate Login</button>
+                <button onclick="simulateLogout()" class="btn secondary-btn">Simulate Logout</button>
+            </div>
+            
+            <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3>Testing Instructions:</h3>
+                <ol style="text-align: left; max-width: 600px; margin: 0 auto;">
+                    <li><strong>Mobile Menu Test:</strong> Click the hamburger menu (☰) button to open the mobile menu</li>
+                    <li><strong>Menu Links:</strong> Try clicking on the menu items (Home, Products, About Us, Contact) - they should be clickable</li>
+                    <li><strong>Close Menu:</strong> Click the X button in the top-right of the menu or click outside the menu area</li>
+                    <li><strong>Username Test:</strong> Click "Simulate Login" to see the username button, then test the dropdown</li>
+                    <li><strong>Responsive Test:</strong> Resize your browser window or use mobile device tools to test different screen sizes</li>
+                </ol>
+            </div>
+        </section>
+    </div>
+
+    <!-- Overlay -->
+    <div class="overlay" id="overlay"></div>
+
+    <script src="js/main.js"></script>
+    <script>
+        // Debug function to check z-index values
+        function debugZIndex() {
+            const nav = document.querySelector('nav');
+            const overlay = document.querySelector('.overlay');
+            const navLinks = document.querySelectorAll('nav ul li a');
+            
+            console.log('Navigation z-index:', window.getComputedStyle(nav).zIndex);
+            console.log('Overlay z-index:', window.getComputedStyle(overlay).zIndex);
+            console.log('First nav link z-index:', window.getComputedStyle(navLinks[0]).zIndex);
+            console.log('Navigation active:', nav.classList.contains('active'));
+            console.log('Overlay active:', overlay.classList.contains('active'));
+        }
+        
+        // Add debug button
+        window.addEventListener('load', function() {
+            const debugBtn = document.createElement('button');
+            debugBtn.textContent = 'Debug Z-Index';
+            debugBtn.onclick = debugZIndex;
+            debugBtn.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 9999; padding: 5px 10px; background: #ff6b6b; color: white; border: none; border-radius: 4px; font-size: 12px;';
+            document.body.appendChild(debugBtn);
+        });
+    </script>
+    <script>
+        // Simulate login for testing
+        function simulateLogin() {
+            const loginBtn = document.querySelector('.login-btn');
+            if (loginBtn && !document.querySelector('.user-profile-btn')) {
+                // Simulate user object
+                const mockUser = {
+                    displayName: 'John Doe',
+                    email: 'john.doe@example.com'
+                };
+                
+                // Change class from login-btn to user-profile-btn
+                loginBtn.classList.remove('login-btn');
+                loginBtn.classList.add('user-profile-btn');
+                
+                // Use display name or email
+                const displayName = mockUser.displayName || mockUser.email.split('@')[0];
+                loginBtn.textContent = displayName;
+                loginBtn.href = '#';
+                
+                // Create dropdown for user menu
+                const dropdown = document.createElement('div');
+                dropdown.className = 'user-dropdown';
+                dropdown.style.cssText = `
+                    position: absolute;
+                    top: calc(100% + 8px);
+                    right: 0;
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                    min-width: 160px;
+                    z-index: 1100;
+                    display: none;
+                    border: 1px solid rgba(0, 0, 0, 0.1);
+                    overflow: hidden;
+                `;
+                
+                dropdown.innerHTML = `
+                    <div style="position: absolute; top: -8px; right: 20px; width: 16px; height: 16px; background: white; transform: rotate(45deg); border-top: 1px solid rgba(0, 0, 0, 0.1); border-left: 1px solid rgba(0, 0, 0, 0.1);"></div>
+                    <ul style="list-style: none; margin: 0; padding: 8px 0;">
+                        <li><a href="pages/profile.html" style="display: block; padding: 12px 16px; text-decoration: none; color: #333; transition: background 0.3s; font-size: 14px; border-bottom: 1px solid #f0f0f0;"><i class="fas fa-user" style="margin-right: 8px; width: 16px;"></i>My Profile</a></li>
+                        <li><a href="#" onclick="simulateLogout()" style="display: block; padding: 12px 16px; text-decoration: none; color: #333; transition: background 0.3s; font-size: 14px;"><i class="fas fa-sign-out-alt" style="margin-right: 8px; width: 16px;"></i>Logout</a></li>
+                    </ul>
+                `;
+                
+                // Add hover effects to dropdown items
+                const dropdownLinks = dropdown.querySelectorAll('a');
+                dropdownLinks.forEach(link => {
+                    link.addEventListener('mouseenter', () => {
+                        link.style.background = 'rgba(76, 175, 80, 0.1)';
+                    });
+                    link.addEventListener('mouseleave', () => {
+                        link.style.background = 'transparent';
+                    });
+                });
+                
+                // Create a wrapper for the button and dropdown
+                const wrapper = document.createElement('div');
+                wrapper.style.position = 'relative';
+                wrapper.style.display = 'inline-block';
+                
+                // Insert wrapper before the login button
+                loginBtn.parentNode.insertBefore(wrapper, loginBtn);
+                
+                // Move login button into wrapper
+                wrapper.appendChild(loginBtn);
+                
+                // Add dropdown to wrapper
+                wrapper.appendChild(dropdown);
+                
+                // Toggle dropdown on click
+                loginBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const isVisible = dropdown.style.display === 'block';
+                    dropdown.style.display = isVisible ? 'none' : 'block';
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!wrapper.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                    }
+                });
+            }
+        }
+        
+        // Simulate logout for testing
+        function simulateLogout() {
+            const userProfileBtn = document.querySelector('.user-profile-btn');
+            if (userProfileBtn) {
+                // Remove the user dropdown
+                const wrapper = userProfileBtn.parentElement;
+                const dropdown = wrapper.querySelector('.user-dropdown');
+                if (dropdown) {
+                    dropdown.remove();
+                }
+                
+                // Change class back to login-btn
+                userProfileBtn.classList.remove('user-profile-btn');
+                userProfileBtn.classList.add('login-btn');
+                
+                // Reset text and href
+                userProfileBtn.textContent = 'Login';
+                userProfileBtn.href = 'pages/login.html';
+                
+                // Move button back to original location
+                const navButtons = document.querySelector('.nav-buttons');
+                if (navButtons && wrapper.parentElement === navButtons) {
+                    navButtons.insertBefore(userProfileBtn, wrapper);
+                    wrapper.remove();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

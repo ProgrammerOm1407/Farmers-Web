@@ -7,7 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const overlay = document.getElementById('overlay');
     
     if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', function() {
+        mobileMenuBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             nav.classList.toggle('active');
             overlay.classList.toggle('active');
             document.body.style.overflow = nav.classList.contains('active') ? 'hidden' : '';
@@ -24,10 +26,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Close menu when clicking on overlay or close button
-        overlay.addEventListener('click', function() {
-            nav.classList.remove('active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
+        overlay.addEventListener('click', function(e) {
+            // Only close if clicking directly on overlay, not on nav elements
+            if (e.target === overlay) {
+                nav.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
         });
         
         // Close menu when clicking on the close button (::before pseudo-element)
@@ -44,6 +49,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 event.clientX <= closeButtonArea.right && 
                 event.clientY >= closeButtonArea.top && 
                 event.clientY <= closeButtonArea.bottom) {
+                event.preventDefault();
+                event.stopPropagation();
+                nav.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Handle touch events for the close button
+        nav.addEventListener('touchstart', function(event) {
+            const rect = nav.getBoundingClientRect();
+            const touch = event.touches[0];
+            const closeButtonArea = {
+                left: rect.right - 60,
+                right: rect.right - 10,
+                top: rect.top + 10,
+                bottom: rect.top + 70
+            };
+            
+            if (touch.clientX >= closeButtonArea.left && 
+                touch.clientX <= closeButtonArea.right && 
+                touch.clientY >= closeButtonArea.top && 
+                touch.clientY <= closeButtonArea.bottom) {
+                event.preventDefault();
+                event.stopPropagation();
                 nav.classList.remove('active');
                 overlay.classList.remove('active');
                 document.body.style.overflow = '';

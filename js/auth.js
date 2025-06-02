@@ -359,16 +359,16 @@ function updateUIForLoggedInUser(user) {
         dropdown.className = 'user-dropdown';
         dropdown.style.cssText = `
             position: absolute;
-            top: 100%;
+            top: calc(100% + 8px);
             right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background: white;
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            min-width: 150px;
-            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            min-width: 160px;
+            z-index: 1100;
             display: none;
-            margin-top: 5px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            overflow: hidden;
         `;
         
         // Determine correct paths based on current page location
@@ -376,9 +376,10 @@ function updateUIForLoggedInUser(user) {
         const profilePath = isInPagesFolder ? 'profile.html' : 'pages/profile.html';
         
         dropdown.innerHTML = `
-            <ul style="list-style: none; margin: 0; padding: 10px 0;">
-                <li><a href="${profilePath}" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; transition: background 0.3s;">My Profile</a></li>
-                <li><a href="#" id="logout-btn" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; transition: background 0.3s;">Logout</a></li>
+            <div style="position: absolute; top: -8px; right: 20px; width: 16px; height: 16px; background: white; transform: rotate(45deg); border-top: 1px solid rgba(0, 0, 0, 0.1); border-left: 1px solid rgba(0, 0, 0, 0.1);"></div>
+            <ul style="list-style: none; margin: 0; padding: 8px 0;">
+                <li><a href="${profilePath}" style="display: block; padding: 12px 16px; text-decoration: none; color: #333; transition: background 0.3s; font-size: 14px; border-bottom: 1px solid #f0f0f0;"><i class="fas fa-user" style="margin-right: 8px; width: 16px;"></i>My Profile</a></li>
+                <li><a href="#" id="logout-btn" style="display: block; padding: 12px 16px; text-decoration: none; color: #333; transition: background 0.3s; font-size: 14px;"><i class="fas fa-sign-out-alt" style="margin-right: 8px; width: 16px;"></i>Logout</a></li>
             </ul>
         `;
         
