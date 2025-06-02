@@ -1,45 +1,69 @@
 // Orders page functionality with Firebase integration
+console.log('Orders.js module loading...');
+
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { collection, query, where, getDocs, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-import { showNotification } from './auth.js';
+import { showNotification, getUserOrders, formatFirebaseTimestamp } from './firebase-service.js';
+
+console.log('Orders.js imports loaded successfully');
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Orders page loaded');
+    
+    // Show loading state initially
+    showLoadingState(true);
+    
     // Check authentication state
     onAuthStateChanged(auth, (user) => {
+        console.log('Auth state changed, user:', user);
         if (user) {
+            console.log('User authenticated, loading orders for:', user.uid);
             loadUserOrders(user);
         } else {
+            console.log('No user authenticated, showing login prompt');
             showLoginPrompt();
         }
     });
+    
+    // Also check if user is already logged in
+    if (auth.currentUser) {
+        console.log('User already logged in:', auth.currentUser.uid);
+        loadUserOrders(auth.currentUser);
+    }
 });
 
 // Function to load orders for authenticated user
 async function loadUserOrders(user) {
+    console.log('loadUserOrders called for user:', user.uid);
     const ordersContainer = document.getElementById('orders-container');
+    
+    if (!ordersContainer) {
+        console.error('orders-container element not found');
+        return;
+    }
     
     try {
         showLoadingState(true);
         
-        // Try to get orders from Firestore
-        const ordersRef = collection(db, 'orders');
-        const q = query(ordersRef, where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(q);
+        // Use the same getUserOrders function as profile.js
+        console.log('Fetching orders using getUserOrders...');
+        const orders = await getUserOrders(user.uid);
+        console.log('Retrieved orders:', orders);
         
-        if (querySnapshot.empty) {
-            // Show sample orders for demo purposes
+        if (orders.length === 0) {
+            console.log('No orders found, showing sample orders');
             showSampleOrders(ordersContainer);
         } else {
-            // Display real orders
-            displayFirebaseOrders(querySnapshot.docs, ordersContainer);
+            console.log('Orders found, displaying them');
+            displayUserOrders(orders, ordersContainer);
         }
         
         showLoadingState(false);
         
     } catch (error) {
         console.error('Error loading orders:', error);
-        // Show sample orders for demo purposes
+        console.log('Error occurred, showing sample orders');
         showSampleOrders(ordersContainer);
         showLoadingState(false);
     }
@@ -64,17 +88,42 @@ async function loadGuestOrder(orderId) {
 
 // Function to display orders
 function displayOrders(orders) {
-    const ordersList = document.getElementById('orders-list');
+    console.log('displayOrders called with', orders.length, 'orders');
+    let ordersList = document.getElementById('orders-list');
     
-    if (!ordersList) return;
+    // If orders-list doesn't exist, create it
+    if (!ordersList) {
+        console.log('orders-list not found, creating structure');
+        const ordersContainer = document.getElementById('orders-container');
+        if (!ordersContainer) {
+            console.error('orders-container element not found');
+            return;
+        }
+        
+        // Create the orders structure
+        ordersContainer.innerHTML = `
+            <div class="orders-header">
+                <h2>My Orders</h2>
+                <p>Track and manage your orders</p>
+            </div>
+            <div id="orders-list"></div>
+        `;
+        
+        ordersList = document.getElementById('orders-list');
+        console.log('Created orders-list element:', ordersList);
+    }
     
     // Clear existing content
     ordersList.innerHTML = '';
+    console.log('Cleared orders-list, adding', orders.length, 'orders');
     
-    orders.forEach(order => {
+    orders.forEach((order, index) => {
+        console.log('Creating order card for order', index, ':', order);
         const orderCard = createOrderCard(order);
         ordersList.appendChild(orderCard);
     });
+    
+    console.log('Finished displaying orders');
 }
 
 // Function to create order card
@@ -158,7 +207,13 @@ function getStatusColor(status) {
 function showLoadingState(isLoading) {
     const ordersContainer = document.getElementById('orders-container');
     
+    if (!ordersContainer) {
+        console.error('orders-container not found for loading state');
+        return;
+    }
+    
     if (isLoading) {
+        console.log('Showing loading state');
         ordersContainer.innerHTML = `
             <div class="loading-state">
                 <div class="loading-spinner">
@@ -167,11 +222,14 @@ function showLoadingState(isLoading) {
                 <p>Loading your orders...</p>
             </div>
         `;
+    } else {
+        console.log('Hiding loading state');
     }
 }
 
 // Function to show sample orders for demo
 function showSampleOrders(container) {
+    console.log('Showing sample orders');
     container.innerHTML = `
         <div class="orders-header">
             <h2>My Orders</h2>
@@ -293,10 +351,93 @@ function showSampleOrders(container) {
         }
     ];
     
+    console.log('Calling displayOrders with sample orders:', sampleOrders.length);
     displayOrders(sampleOrders);
 }
 
-// Function to display Firebase orders
+// Function to display user orders from Firebase
+function displayUserOrders(orders, container) {
+    console.log('displayUserOrders called with', orders.length, 'orders');
+    
+    container.innerHTML = `
+        <div class="orders-header">
+            <h2>My Orders</h2>
+            <p>Track and manage your orders</p>
+        </div>
+        <div id="orders-list"></div>
+    `;
+    
+    const ordersList = document.getElementById('orders-list');
+    
+    orders.forEach((order, index) => {
+        console.log('Creating order card for order', index, ':', order);
+        const orderCard = document.createElement('div');
+        orderCard.className = 'order-card';
+        
+        let itemsHtml = '';
+        if (order.items && order.items.length > 0) {
+            order.items.forEach(item => {
+                itemsHtml += `
+                    <div class="order-item">
+                        <div class="item-details">
+                            <div class="item-image">
+                                <img src="${item.image || '../images/product-placeholder.jpg'}" alt="${item.name}" onerror="this.src='../images/product-placeholder.jpg'">
+                            </div>
+                            <div>
+                                <div class="item-name">${item.name}</div>
+                                <div class="item-quantity">Qty: ${item.quantity}</div>
+                            </div>
+                        </div>
+                        <div class="item-price">₹${(item.price * item.quantity).toFixed(2)}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        const orderDate = formatFirebaseTimestamp(order.createdAt) || new Date(order.orderDate).toLocaleDateString() || 'Unknown';
+        const orderStatus = order.status || 'pending';
+        const orderTotal = order.totalAmount || order.total || order.pricing?.total || 0;
+        
+        orderCard.innerHTML = `
+            <div class="order-header">
+                <div>
+                    <div class="order-id">Order #${order.orderNumber || order.id}</div>
+                    <div class="order-date">${orderDate}</div>
+                </div>
+                <div class="order-status status-${orderStatus}">
+                    ${orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1)}
+                </div>
+            </div>
+            
+            <div class="order-items">
+                ${itemsHtml}
+            </div>
+            
+            <div class="order-footer">
+                <div class="order-total">Total: ₹${orderTotal.toFixed(2)}</div>
+                <div class="order-actions">
+                    <button class="btn secondary-btn" onclick="viewOrderDetails('${order.id}')">
+                        View Details
+                    </button>
+                    ${orderStatus === 'processing' ? `
+                        <button class="track-btn" onclick="trackOrder('${order.id}')">
+                            Track Order
+                        </button>
+                        <button class="cancel-btn" onclick="cancelOrder('${order.id}')">
+                            Cancel Order
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        ordersList.appendChild(orderCard);
+    });
+    
+    console.log('Finished displaying user orders');
+}
+
+// Function to display Firebase orders (legacy)
 function displayFirebaseOrders(docs, container) {
     container.innerHTML = `
         <div class="orders-header">
@@ -392,6 +533,23 @@ window.cancelOrder = function(orderId) {
         }, 1500);
     }
 };
+
+// Debug function to test orders display
+window.testOrdersDisplay = function() {
+    console.log('Testing orders display...');
+    const container = document.getElementById('orders-container');
+    if (container) {
+        console.log('Container found, showing sample orders');
+        showSampleOrders(container);
+    } else {
+        console.error('Container not found');
+    }
+};
+
+// Make sure the function is available globally
+if (typeof window !== 'undefined') {
+    window.testOrdersDisplay = window.testOrdersDisplay;
+}
 
 // Function to show order details modal
 function showOrderDetailsModal(order) {

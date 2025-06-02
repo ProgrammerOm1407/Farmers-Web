@@ -63,6 +63,8 @@ export async function saveOrder(orderData) {
  */
 export async function getUserOrders(userId) {
   try {
+    console.log('Querying orders for userId:', userId);
+    
     const q = query(
       collection(db, 'orders'),
       where('userId', '==', userId),
@@ -72,16 +74,55 @@ export async function getUserOrders(userId) {
     const querySnapshot = await getDocs(q);
     const orders = [];
     
+    console.log('Query snapshot size:', querySnapshot.size);
+    
     querySnapshot.forEach((doc) => {
+      const orderData = doc.data();
+      console.log('Order data:', orderData);
       orders.push({
         id: doc.id,
-        ...doc.data()
+        ...orderData
       });
     });
     
+    console.log('Final orders array:', orders);
     return orders;
   } catch (error) {
     console.error('Error getting user orders: ', error);
+    
+    // If the error is due to missing index, try without orderBy
+    if (error.code === 'failed-precondition' || error.message.includes('index')) {
+      console.log('Retrying without orderBy due to index issue...');
+      try {
+        const q = query(
+          collection(db, 'orders'),
+          where('userId', '==', userId)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        const orders = [];
+        
+        querySnapshot.forEach((doc) => {
+          orders.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        // Sort manually by date
+        orders.sort((a, b) => {
+          const dateA = a.createdAt?.toDate?.() || new Date(a.orderDate);
+          const dateB = b.createdAt?.toDate?.() || new Date(b.orderDate);
+          return dateB - dateA;
+        });
+        
+        return orders;
+      } catch (retryError) {
+        console.error('Retry also failed:', retryError);
+        throw new Error('Failed to get orders: ' + retryError.message);
+      }
+    }
+    
     throw new Error('Failed to get orders: ' + error.message);
   }
 }
@@ -445,4 +486,174 @@ export function formatFirebaseTimestamp(timestamp) {
     hour: '2-digit',
     minute: '2-digit'
   });
+}
+
+// ==================== UI UTILITY FUNCTIONS ====================
+
+/**
+ * Show alert message
+ * @param {string} message - Alert message
+ */
+export function showAlert(message) {
+  // Create a custom alert modal instead of browser alert
+  const alertModal = document.createElement('div');
+  alertModal.className = 'alert-modal';
+  alertModal.innerHTML = `
+      <div class="alert-content">
+          <div class="alert-icon">
+              <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="alert-message">${message}</div>
+          <button class="alert-close-btn">OK</button>
+      </div>
+  `;
+  
+  // Add styles
+  alertModal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+  `;
+  
+  const alertContent = alertModal.querySelector('.alert-content');
+  alertContent.style.cssText = `
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  `;
+  
+  const alertIcon = alertModal.querySelector('.alert-icon');
+  alertIcon.style.cssText = `
+      font-size: 48px;
+      color: #ff6b6b;
+      margin-bottom: 20px;
+  `;
+  
+  const alertMessage = alertModal.querySelector('.alert-message');
+  alertMessage.style.cssText = `
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 25px;
+      line-height: 1.5;
+  `;
+  
+  const alertCloseBtn = alertModal.querySelector('.alert-close-btn');
+  alertCloseBtn.style.cssText = `
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+  `;
+  
+  alertCloseBtn.addEventListener('mouseover', () => {
+      alertCloseBtn.style.background = '#45a049';
+  });
+  
+  alertCloseBtn.addEventListener('mouseout', () => {
+      alertCloseBtn.style.background = '#4CAF50';
+  });
+  
+  // Close modal when clicking the button
+  alertCloseBtn.addEventListener('click', () => {
+      document.body.removeChild(alertModal);
+  });
+  
+  // Close modal when clicking outside
+  alertModal.addEventListener('click', (e) => {
+      if (e.target === alertModal) {
+          document.body.removeChild(alertModal);
+      }
+  });
+  
+  document.body.appendChild(alertModal);
+}
+
+/**
+ * Show notification message
+ * @param {string} message - Notification message
+ */
+export function showNotification(message) {
+  // Check if a notification container already exists
+  let notificationContainer = document.querySelector('.notification-container');
+  
+  // If not, create one
+  if (!notificationContainer) {
+      notificationContainer = document.createElement('div');
+      notificationContainer.className = 'notification-container';
+      document.body.appendChild(notificationContainer);
+      
+      // Add styles
+      notificationContainer.style.position = 'fixed';
+      notificationContainer.style.bottom = '20px';
+      notificationContainer.style.right = '20px';
+      notificationContainer.style.zIndex = '1000';
+  }
+  
+  // Create notification
+  const notification = document.createElement('div');
+  notification.className = 'notification glass-effect';
+  notification.innerHTML = `
+      <div class="notification-content">
+          <i class="fas fa-check-circle"></i>
+          <span>${message}</span>
+      </div>
+  `;
+  
+  // Add styles
+  notification.style.backgroundColor = 'rgba(76, 175, 80, 0.9)';
+  notification.style.color = 'white';
+  notification.style.backdropFilter = 'blur(10px)';
+  notification.style.padding = '15px 20px';
+  notification.style.borderRadius = '10px';
+  notification.style.marginTop = '10px';
+  notification.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+  notification.style.display = 'flex';
+  notification.style.alignItems = 'center';
+  notification.style.justifyContent = 'space-between';
+  notification.style.animation = 'slideIn 0.3s forwards';
+  
+  // Add animation keyframes if not already added
+  if (!document.querySelector('#notification-styles')) {
+      const style = document.createElement('style');
+      style.id = 'notification-styles';
+      style.innerHTML = `
+          @keyframes slideIn {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes slideOut {
+              from { transform: translateX(0); opacity: 1; }
+              to { transform: translateX(100%); opacity: 0; }
+          }
+      `;
+      document.head.appendChild(style);
+  }
+  
+  // Add to container
+  notificationContainer.appendChild(notification);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+      notification.style.animation = 'slideOut 0.3s forwards';
+      setTimeout(() => {
+          if (notification.parentNode) {
+              notification.remove();
+          }
+      }, 300);
+  }, 3000);
 }

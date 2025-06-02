@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Orders</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #orders-container { border: 1px solid #ccc; padding: 20px; min-height: 200px; }
+        .order-card { border: 1px solid #ddd; margin: 10px 0; padding: 15px; }
+        .loading-state { text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Test Orders Page</h1>
+    <div id="orders-container">
+        Loading...
+    </div>
+    
+    <script>
+        // Simple test to see if the orders container exists
+        console.log('Test page loaded');
+        console.log('Orders container:', document.getElementById('orders-container'));
+        
+        // Test the sample orders function
+        setTimeout(() => {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = `
+                <div class="orders-header">
+                    <h2>My Orders</h2>
+                    <p>Track and manage your orders</p>
+                </div>
+                <div id="orders-list">
+                    <div class="order-card">
+                        <h3>Test Order #123</h3>
+                        <p>This is a test order to verify the display works.</p>
+                    </div>
+                </div>
+            `;
+        }, 2000);
+    </script>
+</body>
+</html>

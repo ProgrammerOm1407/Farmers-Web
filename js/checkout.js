@@ -414,6 +414,9 @@ async function processOrder(paymentMethod, paymentId = null) {
                 discount: totals.discount || 0,
                 total: totals.total
             },
+            // Add total amount at root level for easy access in profile
+            totalAmount: totals.total,
+            total: totals.total,
             shippingAddress: {
                 street: shippingInfo.address,
                 city: shippingInfo.city,

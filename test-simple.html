@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        #orders-container { 
+            border: 2px solid #333; 
+            padding: 20px; 
+            min-height: 200px; 
+            background: white;
+            margin: 20px 0;
+        }
+        .order-card { 
+            border: 1px solid #ddd; 
+            margin: 10px 0; 
+            padding: 15px; 
+            background: #f9f9f9;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Orders Test</h1>
+    <p>This is a simple test to verify the orders container works.</p>
+    
+    <button onclick="testBasic()">Test Basic Display</button>
+    <button onclick="testClear()">Clear Container</button>
+    <button onclick="testCheck()">Check Container</button>
+    
+    <div id="orders-container">
+        <p>Initial content - orders will appear here</p>
+    </div>
+    
+    <div id="debug-info">
+        <h3>Debug Info:</h3>
+        <div id="debug-output"></div>
+    </div>
+    
+    <script>
+        function log(message) {
+            console.log(message);
+            const debugOutput = document.getElementById('debug-output');
+            debugOutput.innerHTML += '<p>' + message + '</p>';
+        }
+        
+        function testBasic() {
+            log('Testing basic display...');
+            const container = document.getElementById('orders-container');
+            if (container) {
+                log('Container found!');
+                container.innerHTML = `
+                    <h2>Test Orders</h2>
+                    <div class="order-card">
+                        <h3>Order #TEST001</h3>
+                        <p>Test order item 1</p>
+                        <p>Total: $25.00</p>
+                    </div>
+                    <div class="order-card">
+                        <h3>Order #TEST002</h3>
+                        <p>Test order item 2</p>
+                        <p>Total: $35.00</p>
+                    </div>
+                `;
+                log('Orders displayed successfully!');
+            } else {
+                log('ERROR: Container not found!');
+            }
+        }
+        
+        function testClear() {
+            log('Clearing container...');
+            const container = document.getElementById('orders-container');
+            if (container) {
+                container.innerHTML = '<p>Container cleared</p>';
+                log('Container cleared successfully!');
+            } else {
+                log('ERROR: Container not found!');
+            }
+        }
+        
+        function testCheck() {
+            log('Checking container...');
+            const container = document.getElementById('orders-container');
+            if (container) {
+                log('Container exists: ' + container.tagName);
+                log('Container ID: ' + container.id);
+                log('Container content length: ' + container.innerHTML.length);
+            } else {
+                log('ERROR: Container not found!');
+            }
+        }
+        
+        // Auto-run check on page load
+        window.onload = function() {
+            log('Page loaded');
+            testCheck();
+        };
+    </script>
+</body>
+</html>

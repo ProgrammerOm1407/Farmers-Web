@@ -183,6 +183,46 @@
         .no-orders p {
             margin-bottom: 20px;
         }
+        
+        .loading-state {
+            text-align: center;
+            padding: 60px 0;
+            color: #666;
+        }
+        
+        .loading-spinner {
+            font-size: 40px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .login-prompt, .error-message {
+            text-align: center;
+            padding: 60px 0;
+            color: #666;
+        }
+        
+        .login-prompt-icon, .error-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn.secondary-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn.secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -216,6 +256,18 @@
         <section class="orders-section">
             <div id="orders-container" class="orders-container glass-effect">
                 <!-- Orders will be loaded here dynamically -->
+            </div>
+            <!-- Debug buttons (remove in production) -->
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="testOrdersDisplay()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px;">
+                    Test Orders Display
+                </button>
+                <button onclick="testSimple()" style="padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px;">
+                    Simple Test
+                </button>
+                <button onclick="checkContainer()" style="padding: 10px 20px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px;">
+                    Check Container
+                </button>
             </div>
         </section>
 
@@ -287,341 +339,125 @@
     <script type="module" src="../js/firebase-config.js"></script>
     <script type="module" src="../js/firebase-service.js"></script>
     <script type="module" src="../js/auth.js"></script>
-    <script type="module">
-        import { auth, db } from '../js/firebase-config.js';
-        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { collection, query, where, getDocs, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        import { showNotification } from '../js/auth.js';
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if user is logged in
-            onAuthStateChanged(auth, (user) => {
-                if (!user) {
-                    // Redirect to login page if not logged in
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                // Load user orders
-                loadUserOrders(user);
-            });
-            
-            async function loadUserOrders(user) {
-                const ordersContainer = document.getElementById('orders-container');
-                
-                try {
-                    // Try to get orders from Firestore
-                    const ordersRef = collection(db, 'orders');
-                    const q = query(ordersRef, where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-                    const querySnapshot = await getDocs(q);
-                    
-                    if (querySnapshot.empty) {
-                        // Show no orders message
-                        showNoOrdersMessage(ordersContainer);
-                    } else {
-                        // Display orders
-                        displayOrders(querySnapshot.docs, ordersContainer);
-                    }
-                } catch (error) {
-                    console.error('Error loading orders:', error);
-                    // Show sample orders for demo purposes
-                    showSampleOrders(ordersContainer);
-                }
+    <script type="module" src="../js/orders.js"></script>
+    
+    <script>
+        // Simple test functions for debugging
+        function testSimple() {
+            console.log('Simple test clicked');
+            const container = document.getElementById('orders-container');
+            if (container) {
+                container.innerHTML = '<h2>Simple Test Works!</h2><p>Container found and updated successfully.</p>';
+                console.log('Simple test successful');
+            } else {
+                console.error('Container not found in simple test');
+                alert('Container not found!');
             }
-            
-            function showNoOrdersMessage(container) {
+        }
+        
+        function checkContainer() {
+            console.log('Checking container...');
+            const container = document.getElementById('orders-container');
+            if (container) {
+                console.log('Container found:', container);
+                console.log('Container ID:', container.id);
+                console.log('Container classes:', container.className);
+                console.log('Container content:', container.innerHTML);
+                alert('Container found! Check console for details.');
+            } else {
+                console.error('Container not found');
+                alert('Container NOT found!');
+            }
+        }
+        
+        // Test function for debugging
+        function testOrdersDisplay() {
+            console.log('Test button clicked');
+            const container = document.getElementById('orders-container');
+            if (container) {
+                console.log('Container found, showing test orders');
                 container.innerHTML = `
                     <div class="orders-header">
                         <h2>My Orders</h2>
                         <p>Track and manage your orders</p>
                     </div>
-                    <div class="no-orders" style="text-align: center; padding: 60px 20px;">
-                        <i class="fas fa-shopping-bag" style="font-size: 64px; color: var(--primary-color); margin-bottom: 20px;"></i>
-                        <h3>No Orders Yet</h3>
-                        <p>You haven't placed any orders yet. Start shopping to see your orders here.</p>
-                        <a href="products.html" class="btn primary-btn" style="margin-top: 20px;">Shop Now</a>
-                    </div>
-                `;
-            }
-            
-            function showSampleOrders(container) {
-                container.innerHTML = `
-                    <div class="orders-header">
-                        <h2>My Orders</h2>
-                        <p>Track and manage your orders</p>
-                    </div>
-                    <div id="orders-list"></div>
-                `;
-                
-                // For demo purposes, we'll create some sample orders
-                // In a real application, these would come from a database
-                const sampleOrders = [
-                {
-                    id: 'ORD123456',
-                    date: '2023-07-15',
-                    status: 'delivered',
-                    items: [
-                        {
-                            name: 'Organic Wheat',
-                            quantity: 2,
-                            price: 250,
-                            image: '../images/products/wheat.jpg'
-                        },
-                        {
-                            name: 'Brown Rice',
-                            quantity: 1,
-                            price: 180,
-                            image: '../images/products/rice.jpg'
-                        }
-                    ],
-                    total: 680,
-                    address: '123 Main St, Agri City'
-                },
-                {
-                    id: 'ORD123457',
-                    date: '2023-08-02',
-                    status: 'processing',
-                    items: [
-                        {
-                            name: 'Organic Millet',
-                            quantity: 3,
-                            price: 150,
-                            image: '../images/products/millet.jpg'
-                        }
-                    ],
-                    total: 450,
-                    address: '123 Main St, Agri City'
-                }
-                ];
-                
-                // Generate order cards
-                const ordersList = document.getElementById('orders-list');
-                sampleOrders.forEach(order => {
-                    const orderCard = document.createElement('div');
-                    orderCard.className = 'order-card';
-                    
-                    // Format date
-                    const orderDate = new Date(order.date);
-                    const formattedDate = orderDate.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    });
-                    
-                    // Create order header
-                    const orderHeader = document.createElement('div');
-                    orderHeader.className = 'order-header';
-                    orderHeader.innerHTML = `
-                        <div>
-                            <div class="order-id">Order #${order.id}</div>
-                            <div class="order-date">${formattedDate}</div>
-                        </div>
-                        <div class="order-status status-${order.status}">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</div>
-                    `;
-                    
-                    // Create order items
-                    const orderItems = document.createElement('div');
-                    orderItems.className = 'order-items';
-                    
-                    order.items.forEach(item => {
-                        const orderItem = document.createElement('div');
-                        orderItem.className = 'order-item';
-                        orderItem.innerHTML = `
-                            <div class="item-details">
-                                <div class="item-image">
-                                    <img src="${item.image}" alt="${item.name}">
-                                </div>
+                    <div id="orders-list">
+                        <div class="order-card">
+                            <div class="order-header">
                                 <div>
-                                    <div class="item-name">${item.name}</div>
-                                    <div class="item-quantity">Qty: ${item.quantity}</div>
+                                    <div class="order-id">Order #TEST123</div>
+                                    <div class="order-date">2023-12-15</div>
+                                </div>
+                                <div class="order-status status-delivered">
+                                    Delivered
                                 </div>
                             </div>
-                            <div class="item-price">₹${item.price * item.quantity}</div>
-                        `;
-                        
-                        orderItems.appendChild(orderItem);
-                    });
-                    
-                    // Create order footer
-                    const orderFooter = document.createElement('div');
-                    orderFooter.className = 'order-footer';
-                    
-                    // Only show cancel button for processing orders
-                    const cancelButton = order.status === 'processing' ? 
-                        `<button class="cancel-btn" data-order-id="${order.id}">Cancel Order</button>` : '';
-                    
-                    orderFooter.innerHTML = `
-                        <div class="order-total">Total: ₹${order.total}</div>
-                        <div class="order-actions">
-                            <button class="track-btn" data-order-id="${order.id}">Track Order</button>
-                            ${cancelButton}
-                        </div>
-                    `;
-                    
-                    // Assemble order card
-                    orderCard.appendChild(orderHeader);
-                    orderCard.appendChild(orderItems);
-                    orderCard.appendChild(orderFooter);
-                    
-                    // Add to orders list
-                    ordersList.appendChild(orderCard);
-                });
-                
-                // Add event listeners for track and cancel buttons
-                const trackButtons = document.querySelectorAll('.track-btn');
-                const cancelButtons = document.querySelectorAll('.cancel-btn');
-                
-                trackButtons.forEach(button => {
-                    button.addEventListener('click', function() {
-                        const orderId = this.getAttribute('data-order-id');
-                        showNotification(`Tracking information for order #${orderId} will be sent to your email`);
-                    });
-                });
-                
-                cancelButtons.forEach(button => {
-                    button.addEventListener('click', function() {
-                        const orderId = this.getAttribute('data-order-id');
-                        
-                        if (confirm(`Are you sure you want to cancel order #${orderId}?`)) {
-                            // In a real application, you would send a request to cancel the order
-                            showNotification(`Order #${orderId} has been cancelled`);
                             
-                            // Update UI
-                            const orderCard = this.closest('.order-card');
-                            const statusElement = orderCard.querySelector('.order-status');
-                            
-                            statusElement.className = 'order-status status-cancelled';
-                            statusElement.textContent = 'Cancelled';
-                            
-                            // Remove cancel button
-                            this.remove();
-                        }
-                    });
-                });
-            }
-            
-            function displayOrders(orderDocs, container) {
-                container.innerHTML = `
-                    <div class="orders-header">
-                        <h2>My Orders</h2>
-                        <p>Track and manage your orders</p>
-                    </div>
-                    <div id="orders-list"></div>
-                `;
-                
-                const ordersList = document.getElementById('orders-list');
-                
-                orderDocs.forEach(doc => {
-                    const order = doc.data();
-                    const orderCard = document.createElement('div');
-                    orderCard.className = 'order-card';
-                    
-                    // Format date
-                    const orderDate = order.createdAt ? order.createdAt.toDate() : new Date();
-                    const formattedDate = orderDate.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    });
-                    
-                    // Create order header
-                    const orderHeader = document.createElement('div');
-                    orderHeader.className = 'order-header';
-                    orderHeader.innerHTML = `
-                        <div>
-                            <div class="order-id">Order #${order.id || doc.id}</div>
-                            <div class="order-date">${formattedDate}</div>
-                        </div>
-                        <div class="order-status status-${order.status || 'processing'}">${(order.status || 'processing').charAt(0).toUpperCase() + (order.status || 'processing').slice(1)}</div>
-                    `;
-                    
-                    // Create order items
-                    const orderItems = document.createElement('div');
-                    orderItems.className = 'order-items';
-                    
-                    if (order.items && order.items.length > 0) {
-                        order.items.forEach(item => {
-                            const orderItem = document.createElement('div');
-                            orderItem.className = 'order-item';
-                            orderItem.innerHTML = `
-                                <div class="item-details">
-                                    <div class="item-image">
-                                        <img src="${item.image || '../images/products/default.jpg'}" alt="${item.name}">
+                            <div class="order-items">
+                                <div class="order-item">
+                                    <div class="item-details">
+                                        <div class="item-image">
+                                            <img src="../images/products/basmati-rice.jpg" alt="Organic Basmati Rice" onerror="this.src='../images/product-placeholder.jpg'">
+                                        </div>
+                                        <div>
+                                            <div class="item-name">Organic Basmati Rice</div>
+                                            <div class="item-quantity">Qty: 2</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div class="item-name">${item.name}</div>
-                                        <div class="item-quantity">Qty: ${item.quantity}</div>
-                                    </div>
+                                    <div class="item-price">₹398.00</div>
                                 </div>
-                                <div class="item-price">₹${item.price * item.quantity}</div>
-                            `;
+                            </div>
                             
-                            orderItems.appendChild(orderItem);
-                        });
-                    }
-                    
-                    // Create order footer
-                    const orderFooter = document.createElement('div');
-                    orderFooter.className = 'order-footer';
-                    
-                    // Only show cancel button for processing orders
-                    const cancelButton = (order.status === 'processing' || !order.status) ? 
-                        `<button class="cancel-btn" data-order-id="${order.id || doc.id}">Cancel Order</button>` : '';
-                    
-                    orderFooter.innerHTML = `
-                        <div class="order-total">Total: ₹${order.total || 0}</div>
-                        <div class="order-actions">
-                            <button class="track-btn" data-order-id="${order.id || doc.id}">Track Order</button>
-                            ${cancelButton}
+                            <div class="order-footer">
+                                <div class="order-total">Total: ₹511.35</div>
+                                <div class="order-actions">
+                                    <button class="btn secondary-btn">View Details</button>
+                                </div>
+                            </div>
                         </div>
-                    `;
-                    
-                    // Assemble order card
-                    orderCard.appendChild(orderHeader);
-                    orderCard.appendChild(orderItems);
-                    orderCard.appendChild(orderFooter);
-                    
-                    // Add to orders list
-                    ordersList.appendChild(orderCard);
-                });
-                
-                // Add event listeners for track and cancel buttons
-                addOrderEventListeners();
-            }
-            
-            function addOrderEventListeners() {
-                const trackButtons = document.querySelectorAll('.track-btn');
-                const cancelButtons = document.querySelectorAll('.cancel-btn');
-                
-                trackButtons.forEach(button => {
-                    button.addEventListener('click', function() {
-                        const orderId = this.getAttribute('data-order-id');
-                        showNotification(`Tracking information for order #${orderId} will be sent to your email`);
-                    });
-                });
-                
-                cancelButtons.forEach(button => {
-                    button.addEventListener('click', function() {
-                        const orderId = this.getAttribute('data-order-id');
                         
-                        if (confirm(`Are you sure you want to cancel order #${orderId}?`)) {
-                            // In a real application, you would send a request to cancel the order
-                            showNotification(`Order #${orderId} has been cancelled`);
+                        <div class="order-card">
+                            <div class="order-header">
+                                <div>
+                                    <div class="order-id">Order #TEST124</div>
+                                    <div class="order-date">2023-12-10</div>
+                                </div>
+                                <div class="order-status status-processing">
+                                    Processing
+                                </div>
+                            </div>
                             
-                            // Update UI
-                            const orderCard = this.closest('.order-card');
-                            const statusElement = orderCard.querySelector('.order-status');
+                            <div class="order-items">
+                                <div class="order-item">
+                                    <div class="item-details">
+                                        <div class="item-image">
+                                            <img src="../images/products/brown-rice.jpg" alt="Organic Brown Rice" onerror="this.src='../images/product-placeholder.jpg'">
+                                        </div>
+                                        <div>
+                                            <div class="item-name">Organic Brown Rice</div>
+                                            <div class="item-quantity">Qty: 3</div>
+                                        </div>
+                                    </div>
+                                    <div class="item-price">₹477.00</div>
+                                </div>
+                            </div>
                             
-                            statusElement.className = 'order-status status-cancelled';
-                            statusElement.textContent = 'Cancelled';
-                            
-                            // Remove cancel button
-                            this.remove();
-                        }
-                    });
-                });
+                            <div class="order-footer">
+                                <div class="order-total">Total: ₹553.35</div>
+                                <div class="order-actions">
+                                    <button class="btn secondary-btn">View Details</button>
+                                    <button class="track-btn">Track Order</button>
+                                    <button class="cancel-btn">Cancel Order</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                console.error('Container not found');
+                alert('Container not found!');
             }
-        });
+        }
     </script>
 </body>
 </html>

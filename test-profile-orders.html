@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Profile Orders - Farmers Web</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        #orders-container {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            min-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Profile Orders Test</h1>
+        
+        <div>
+            <button class="btn" onclick="testAuth()">Test Auth</button>
+            <button class="btn" onclick="testFirestore()">Test Firestore</button>
+            <button class="btn" onclick="testGetUserOrders()">Test Get User Orders</button>
+            <button class="btn" onclick="testFetchAndDisplayOrders()">Test Fetch & Display Orders</button>
+            <button class="btn" onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results">Results will appear here...</div>
+        
+        <h3>Orders Container Test:</h3>
+        <div id="orders-container">
+            <p>Orders will be displayed here when testing...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from './js/firebase-config.js';
+        import { getUserOrders } from './js/firebase-service.js';
+        import { fetchAndDisplayOrders } from './js/profile.js';
+        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        
+        let currentUser = null;
+        
+        // Listen for auth changes
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            log(`Auth state changed: ${user ? `User logged in: ${user.email}` : 'No user logged in'}`);
+        });
+        
+        function log(message) {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            results.textContent += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+        
+        window.testAuth = function() {
+            log('=== Testing Auth ===');
+            log(`Current user: ${currentUser ? currentUser.email : 'None'}`);
+            log(`Auth object: ${auth ? 'Available' : 'Not available'}`);
+            log(`User UID: ${currentUser ? currentUser.uid : 'N/A'}`);
+        };
+        
+        window.testFirestore = function() {
+            log('=== Testing Firestore ===');
+            log(`DB object: ${db ? 'Available' : 'Not available'}`);
+            log(`DB app: ${db ? db.app.name : 'N/A'}`);
+        };
+        
+        window.testGetUserOrders = async function() {
+            log('=== Testing getUserOrders ===');
+            if (!currentUser) {
+                log('ERROR: No user logged in');
+                return;
+            }
+            
+            try {
+                log(`Fetching orders for user: ${currentUser.uid}`);
+                const orders = await getUserOrders(currentUser.uid);
+                log(`Orders retrieved: ${orders.length} orders found`);
+                log(`Orders data: ${JSON.stringify(orders, null, 2)}`);
+            } catch (error) {
+                log(`ERROR: ${error.message}`);
+                log(`Error details: ${JSON.stringify(error, null, 2)}`);
+            }
+        };
+        
+        window.testFetchAndDisplayOrders = async function() {
+            log('=== Testing fetchAndDisplayOrders ===');
+            if (!currentUser) {
+                log('ERROR: No user logged in');
+                return;
+            }
+            
+            try {
+                // Create a test orders container
+                const ordersContainer = document.getElementById('orders-container');
+                ordersContainer.innerHTML = '<p>Loading orders...</p>';
+                
+                // Temporarily change the container ID for testing
+                ordersContainer.id = 'orders';
+                
+                log(`Calling fetchAndDisplayOrders for user: ${currentUser.uid}`);
+                await fetchAndDisplayOrders(currentUser);
+                log('fetchAndDisplayOrders completed successfully');
+                
+                // Change ID back
+                ordersContainer.id = 'orders-container';
+            } catch (error) {
+                log(`ERROR: ${error.message}`);
+                log(`Error details: ${JSON.stringify(error, null, 2)}`);
+            }
+        };
+        
+        window.clearResults = function() {
+            document.getElementById('results').textContent = 'Results cleared...\n';
+        };
+        
+        // Initial log
+        log('Test page loaded. Please log in first if you haven\'t already.');
+    </script>
+</body>
+</html>

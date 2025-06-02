@@ -374,12 +374,10 @@ function updateUIForLoggedInUser(user) {
         // Determine correct paths based on current page location
         const isInPagesFolder = window.location.pathname.includes('/pages/');
         const profilePath = isInPagesFolder ? 'profile.html' : 'pages/profile.html';
-        const ordersPath = isInPagesFolder ? 'orders.html' : 'pages/orders.html';
         
         dropdown.innerHTML = `
             <ul style="list-style: none; margin: 0; padding: 10px 0;">
                 <li><a href="${profilePath}" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; transition: background 0.3s;">My Profile</a></li>
-                <li><a href="${ordersPath}" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; transition: background 0.3s;">My Orders</a></li>
                 <li><a href="#" id="logout-btn" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; transition: background 0.3s;">Logout</a></li>
             </ul>
         `;
