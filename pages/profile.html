@@ -341,7 +341,8 @@
         import { auth, db } from '../js/firebase-config.js';
         import { onAuthStateChanged, updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { collection, query, where, getDocs, updateDoc, doc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        import { showAlert, showNotification } from '../js/auth.js';
+        // Import functions from firebase-service.js
+        import { showAlert, showNotification, getUserOrders, formatFirebaseTimestamp } from '../js/firebase-service.js';
 
         document.addEventListener('DOMContentLoaded', function() {
             // Check if user is logged in
@@ -354,6 +355,9 @@
                 
                 // Initialize profile with user data
                 initializeProfile(user);
+                
+                // Fetch and display user orders
+                fetchAndDisplayOrders(user);
             });
             
             async function initializeProfile(user) {
@@ -385,6 +389,57 @@
                     }
                 } catch (error) {
                     console.error('Error fetching user data:', error);
+                }
+            }
+            
+            async function fetchAndDisplayOrders(user) {
+                const ordersContainer = document.getElementById('orders');
+                // Clear existing content
+                ordersContainer.innerHTML = '';
+                
+                try {
+                    const orders = await getUserOrders(user.uid);
+                    
+                    if (orders.length === 0) {
+                        // Display "No Orders Yet" message
+                        ordersContainer.innerHTML = `
+                            <div class="no-orders">
+                                <i class="fas fa-shopping-bag"></i>
+                                <h3>No Orders Yet</h3>
+                                <p>You haven't placed any orders yet. Start shopping to see your orders here.</p>
+                                <a href="products.html" class="btn primary-btn">Shop Now</a>
+                            </div>
+                        `;
+                    } else {
+                        // Display orders
+                        orders.forEach(order => {
+                            const orderCard = document.createElement('div');
+                            orderCard.className = 'order-card glass-effect';
+                            
+                            let itemsHtml = '';
+                            order.items.forEach(item => {
+                                itemsHtml += `<div class="order-item"><span>${item.name} (x${item.quantity})</span><span>₹${item.price * item.quantity}</span></div>`;
+                            });
+                            
+                            orderCard.innerHTML = `
+                                <div class="order-header">
+                                    <h4>Order ID: ${order.id}</h4>
+                                    <span class="order-status status-${order.status}">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
+                                </div>
+                                <div class="order-items">
+                                    ${itemsHtml}
+                                </div>
+                                <div class="order-footer">
+                                    <span>Total: ₹${order.totalAmount}</span>
+                                    <span>Date: ${formatFirebaseTimestamp(order.createdAt)}</span>
+                                </div>
+                            `;
+                            ordersContainer.appendChild(orderCard);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error fetching user orders:', error);
+                    ordersContainer.innerHTML = `<p>Error loading orders. Please try again.</p>`;
                 }
             }
             
