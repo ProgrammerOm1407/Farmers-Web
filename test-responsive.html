@@ -12,12 +12,25 @@
             position: fixed;
             top: 10px;
             left: 10px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
             z-index: 9999;
+            font-family: monospace;
+            line-height: 1.3;
+            max-width: 200px;
+        }
+        
+        @media (max-width: 576px) {
+            .test-info {
+                font-size: 10px;
+                padding: 6px 8px;
+                top: 5px;
+                left: 5px;
+                max-width: 150px;
+            }
         }
         
         .test-grid {
@@ -38,7 +51,9 @@
 <body>
     <div class="test-info">
         Screen: <span id="screen-size"></span><br>
-        Mobile Menu: <span id="mobile-status"></span>
+        Device: <span id="device-type"></span><br>
+        Menu: <span id="mobile-status"></span><br>
+        Touch: <span id="touch-support"></span>
     </div>
 
     <div class="container">
@@ -117,17 +132,39 @@
         // Display screen size info
         function updateScreenInfo() {
             const screenSize = document.getElementById('screen-size');
+            const deviceType = document.getElementById('device-type');
             const mobileStatus = document.getElementById('mobile-status');
+            const touchSupport = document.getElementById('touch-support');
             const mobileBtn = document.querySelector('.mobile-menu-btn');
             
-            screenSize.textContent = `${window.innerWidth}x${window.innerHeight}`;
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            
+            screenSize.textContent = `${width}x${height}`;
+            
+            // Determine device type
+            let device = 'Desktop';
+            if (width <= 375) device = 'XS Mobile';
+            else if (width <= 576) device = 'SM Mobile';
+            else if (width <= 768) device = 'Mobile';
+            else if (width <= 992) device = 'Tablet';
+            else if (width <= 1200) device = 'Laptop';
+            
+            deviceType.textContent = device;
             
             const isVisible = window.getComputedStyle(mobileBtn).display !== 'none';
-            mobileStatus.textContent = isVisible ? 'Visible' : 'Hidden';
+            mobileStatus.textContent = isVisible ? 'Show' : 'Hide';
+            
+            // Check touch support
+            const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            touchSupport.textContent = hasTouch ? 'Yes' : 'No';
         }
         
         updateScreenInfo();
         window.addEventListener('resize', updateScreenInfo);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(updateScreenInfo, 100);
+        });
     </script>
 </body>
 </html>

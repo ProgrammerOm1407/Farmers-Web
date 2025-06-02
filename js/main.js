@@ -35,15 +35,38 @@ document.addEventListener('DOMContentLoaded', function() {
             const rect = nav.getBoundingClientRect();
             const closeButtonArea = {
                 left: rect.right - 60,
-                right: rect.right - 20,
-                top: rect.top + 20,
-                bottom: rect.top + 60
+                right: rect.right - 10,
+                top: rect.top + 10,
+                bottom: rect.top + 70
             };
             
             if (event.clientX >= closeButtonArea.left && 
                 event.clientX <= closeButtonArea.right && 
                 event.clientY >= closeButtonArea.top && 
                 event.clientY <= closeButtonArea.bottom) {
+                nav.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Handle touch events for better mobile experience
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        nav.addEventListener('touchstart', function(event) {
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        });
+        
+        nav.addEventListener('touchend', function(event) {
+            const touchEndX = event.changedTouches[0].clientX;
+            const touchEndY = event.changedTouches[0].clientY;
+            const deltaX = touchStartX - touchEndX;
+            const deltaY = Math.abs(touchStartY - touchEndY);
+            
+            // Swipe left to close menu (only if swipe is more horizontal than vertical)
+            if (deltaX > 50 && deltaY < 100) {
                 nav.classList.remove('active');
                 overlay.classList.remove('active');
                 document.body.style.overflow = '';
@@ -89,7 +112,85 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load Featured Products
     loadFeaturedProducts();
+    
+    // Mobile-specific optimizations
+    initializeMobileOptimizations();
 });
+
+// Mobile optimization functions
+function initializeMobileOptimizations() {
+    // Prevent zoom on input focus for iOS
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            if (window.innerWidth < 768) {
+                const viewport = document.querySelector('meta[name="viewport"]');
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+            }
+        });
+        
+        input.addEventListener('blur', function() {
+            if (window.innerWidth < 768) {
+                const viewport = document.querySelector('meta[name="viewport"]');
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+            }
+        });
+    });
+    
+    // Improve touch scrolling on iOS
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        document.body.style.webkitOverflowScrolling = 'touch';
+    }
+    
+    // Handle orientation change
+    window.addEventListener('orientationchange', function() {
+        setTimeout(function() {
+            // Force a repaint to fix layout issues
+            document.body.style.display = 'none';
+            document.body.offsetHeight; // Trigger reflow
+            document.body.style.display = '';
+            
+            // Close mobile menu on orientation change
+            const nav = document.querySelector('nav');
+            const overlay = document.getElementById('overlay');
+            if (nav && nav.classList.contains('active')) {
+                nav.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }, 100);
+    });
+    
+    // Add touch feedback to buttons
+    const touchElements = document.querySelectorAll('.btn, .cart-icon, .mobile-menu-btn, .product-card');
+    touchElements.forEach(element => {
+        element.addEventListener('touchstart', function() {
+            this.style.opacity = '0.8';
+        });
+        
+        element.addEventListener('touchend', function() {
+            this.style.opacity = '';
+        });
+        
+        element.addEventListener('touchcancel', function() {
+            this.style.opacity = '';
+        });
+    });
+    
+    // Optimize images for mobile
+    const images = document.querySelectorAll('img');
+    images.forEach(img => {
+        img.addEventListener('load', function() {
+            this.style.opacity = '1';
+        });
+        
+        // Add loading placeholder
+        if (!img.complete) {
+            img.style.opacity = '0.5';
+            img.style.transition = 'opacity 0.3s ease';
+        }
+    });
+}
 
 // Function to load featured products
 function loadFeaturedProducts() {
