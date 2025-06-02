@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileMenuBtn.addEventListener('click', function() {
             nav.classList.toggle('active');
             overlay.classList.toggle('active');
+            document.body.style.overflow = nav.classList.contains('active') ? 'hidden' : '';
         });
         
         // Close menu when clicking on a menu item
@@ -18,16 +19,55 @@ document.addEventListener('DOMContentLoaded', function() {
             link.addEventListener('click', function() {
                 nav.classList.remove('active');
                 overlay.classList.remove('active');
+                document.body.style.overflow = '';
             });
+        });
+        
+        // Close menu when clicking on overlay or close button
+        overlay.addEventListener('click', function() {
+            nav.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+        
+        // Close menu when clicking on the close button (::before pseudo-element)
+        nav.addEventListener('click', function(event) {
+            const rect = nav.getBoundingClientRect();
+            const closeButtonArea = {
+                left: rect.right - 60,
+                right: rect.right - 20,
+                top: rect.top + 20,
+                bottom: rect.top + 60
+            };
+            
+            if (event.clientX >= closeButtonArea.left && 
+                event.clientX <= closeButtonArea.right && 
+                event.clientY >= closeButtonArea.top && 
+                event.clientY <= closeButtonArea.bottom) {
+                nav.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
         });
         
         // Close menu when clicking outside
         document.addEventListener('click', function(event) {
             if (nav.classList.contains('active') && 
                 !nav.contains(event.target) && 
-                !mobileMenuBtn.contains(event.target)) {
+                !mobileMenuBtn.contains(event.target) &&
+                !overlay.contains(event.target)) {
                 nav.classList.remove('active');
                 overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Close menu on escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && nav.classList.contains('active')) {
+                nav.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
             }
         });
     }
