@@ -42,7 +42,9 @@
             <p>Try resizing your browser window or using mobile device tools to test the mobile menu.</p>
             
             <div style="margin: 20px 0;">
-                <button onclick="simulateLogin()" class="btn primary-btn">Simulate Login</button>
+                <button onclick="simulateLogin()" class="btn primary-btn">Simulate Login (Short Name)</button>
+                <button onclick="simulateLogin('Christopher Alexander Johnson')" class="btn primary-btn">Simulate Login (Long Name)</button>
+                <button onclick="simulateLogin('verylongusername@example.com')" class="btn primary-btn">Simulate Login (Long Email)</button>
                 <button onclick="simulateLogout()" class="btn secondary-btn">Simulate Logout</button>
             </div>
             
@@ -52,7 +54,14 @@
                     <li><strong>Mobile Menu Test:</strong> Click the hamburger menu (☰) button to open the mobile menu</li>
                     <li><strong>Menu Links:</strong> Try clicking on the menu items (Home, Products, About Us, Contact) - they should be clickable</li>
                     <li><strong>Close Menu:</strong> Click the X button in the top-right of the menu or click outside the menu area</li>
-                    <li><strong>Username Test:</strong> Click "Simulate Login" to see the username button, then test the dropdown</li>
+                    <li><strong>Username Test:</strong> Try all three login buttons to test different name lengths:
+                        <ul style="margin: 5px 0;">
+                            <li>Short Name: "John" (normal display)</li>
+                            <li>Long Name: "Christopher..." (truncated display)</li>
+                            <li>Long Email: "verylongu..." (truncated display)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Dropdown Test:</strong> Click on the username button to test the dropdown menu</li>
                     <li><strong>Responsive Test:</strong> Resize your browser window or use mobile device tools to test different screen sizes</li>
                 </ol>
             </div>
@@ -87,23 +96,54 @@
         });
     </script>
     <script>
+        // Function to extract first name from full name or email
+        function extractFirstName(fullName) {
+            if (!fullName) return 'User';
+            
+            // Remove any extra whitespace
+            fullName = fullName.trim();
+            
+            // If it's an email-like string (contains @), use the part before @
+            if (fullName.includes('@')) {
+                fullName = fullName.split('@')[0];
+            }
+            
+            // Split by space and take the first part
+            const nameParts = fullName.split(' ');
+            let firstName = nameParts[0];
+            
+            // If first name is still too long, truncate it
+            if (firstName.length > 12) {
+                firstName = firstName.substring(0, 12) + '...';
+            } else if (firstName.length > 8) {
+                // For names longer than 8 characters, truncate for mobile
+                firstName = firstName.substring(0, 8) + '...';
+            }
+            
+            // Capitalize first letter
+            firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            
+            return firstName;
+        }
+
         // Simulate login for testing
-        function simulateLogin() {
+        function simulateLogin(customName) {
             const loginBtn = document.querySelector('.login-btn');
             if (loginBtn && !document.querySelector('.user-profile-btn')) {
                 // Simulate user object
                 const mockUser = {
-                    displayName: 'John Doe',
-                    email: 'john.doe@example.com'
+                    displayName: customName || 'John Doe',
+                    email: customName || 'john.doe@example.com'
                 };
                 
                 // Change class from login-btn to user-profile-btn
                 loginBtn.classList.remove('login-btn');
                 loginBtn.classList.add('user-profile-btn');
                 
-                // Use display name or email
-                const displayName = mockUser.displayName || mockUser.email.split('@')[0];
-                loginBtn.textContent = displayName;
+                // Use display name or email - extract first name only
+                const fullName = mockUser.displayName || mockUser.email.split('@')[0];
+                const firstName = extractFirstName(fullName);
+                loginBtn.textContent = firstName;
                 loginBtn.href = '#';
                 
                 // Create dropdown for user menu

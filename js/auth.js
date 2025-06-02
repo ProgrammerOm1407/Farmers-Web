@@ -349,9 +349,10 @@ function updateUIForLoggedInUser(user) {
         loginBtn.classList.remove('login-btn');
         loginBtn.classList.add('user-profile-btn');
         
-        // Use display name or email
-        const displayName = user.displayName || user.email.split('@')[0];
-        loginBtn.textContent = displayName;
+        // Use display name or email - extract first name only
+        const fullName = user.displayName || user.email.split('@')[0];
+        const firstName = extractFirstName(fullName);
+        loginBtn.textContent = firstName;
         loginBtn.href = '#';
         
         // Create dropdown for user menu
@@ -647,6 +648,49 @@ function showNotification(message) {
             }
         }, 300);
     }, 3000);
+}
+
+// Function to extract first name from full name or email
+function extractFirstName(fullName) {
+    if (!fullName) return 'User';
+    
+    // Remove any extra whitespace
+    fullName = fullName.trim();
+    
+    // If it's an email-like string (contains @), use the part before @
+    if (fullName.includes('@')) {
+        fullName = fullName.split('@')[0];
+    }
+    
+    // Remove any numbers or special characters except spaces, hyphens, and apostrophes
+    fullName = fullName.replace(/[^a-zA-Z\s\-']/g, '');
+    
+    // Split by space and take the first part
+    const nameParts = fullName.split(' ').filter(part => part.length > 0);
+    let firstName = nameParts[0] || 'User';
+    
+    // Handle different screen sizes with different truncation lengths
+    const isMobile = window.innerWidth <= 768;
+    const isSmallMobile = window.innerWidth <= 480;
+    
+    let maxLength;
+    if (isSmallMobile) {
+        maxLength = 6;
+    } else if (isMobile) {
+        maxLength = 8;
+    } else {
+        maxLength = 12;
+    }
+    
+    // If first name is too long, truncate it
+    if (firstName.length > maxLength) {
+        firstName = firstName.substring(0, maxLength) + '...';
+    }
+    
+    // Capitalize first letter and make rest lowercase
+    firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+    
+    return firstName;
 }
 
 // Export functions for use in other modules
