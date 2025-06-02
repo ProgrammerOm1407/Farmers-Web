@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Test</title>
+</head>
+<body>
+    <h1>Firebase Test</h1>
+    <div id="status">Loading...</div>
+    <button id="test-btn">Test Firebase</button>
+
+    <script type="module">
+        import { auth, db } from './js/firebase-config.js';
+        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        
+        const statusDiv = document.getElementById('status');
+        const testBtn = document.getElementById('test-btn');
+        
+        // Test Firebase initialization
+        try {
+            statusDiv.innerHTML = 'Firebase initialized successfully!<br>';
+            statusDiv.innerHTML += `Auth: ${auth ? 'OK' : 'FAILED'}<br>`;
+            statusDiv.innerHTML += `Firestore: ${db ? 'OK' : 'FAILED'}<br>`;
+            
+            // Test auth state listener
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    statusDiv.innerHTML += `User logged in: ${user.email}<br>`;
+                } else {
+                    statusDiv.innerHTML += 'No user logged in<br>';
+                }
+            });
+            
+        } catch (error) {
+            statusDiv.innerHTML = `Error: ${error.message}`;
+            console.error('Firebase test error:', error);
+        }
+        
+        testBtn.addEventListener('click', () => {
+            statusDiv.innerHTML += 'Firebase services are working!<br>';
+        });
+    </script>
+</body>
+</html>

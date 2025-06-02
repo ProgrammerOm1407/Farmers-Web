@@ -1,6 +1,26 @@
 // Checkout functionality for Farmers Web
+import { 
+    saveOrder, 
+    saveCustomer, 
+    getCustomerByEmail, 
+    getCurrentUser, 
+    onAuthStateChange,
+    generateOrderNumber,
+    saveAnalyticsEvent 
+} from './firebase-service.js';
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Check authentication state
+    checkAuthState();
+    
+    // Listen to auth state changes
+    onAuthStateChange((user) => {
+        if (user) {
+            console.log('User is signed in:', user.email);
+        } else {
+            console.log('User is signed out');
+        }
+    });
     // Load cart items
     loadCheckoutItems();
     
@@ -317,66 +337,145 @@ function processRazorpayPayment() {
 }
 
 // Function to process order
-function processOrder(paymentMethod, paymentId = null) {
-    // Get shipping info and totals
-    const shippingInfo = JSON.parse(localStorage.getItem('farmersWebShippingInfo'));
-    const totals = JSON.parse(localStorage.getItem('farmersWebCheckoutTotals'));
-    const cart = JSON.parse(localStorage.getItem('farmersWebCart'));
-    
-    if (!shippingInfo || !totals || !cart) return;
-    
-    // Generate order number
-    const orderNumber = 'FW' + Date.now().toString().slice(-6);
-    
-    // Get current date
-    const orderDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    
-    // Create order object
-    const order = {
-        orderNumber,
-        orderDate,
-        paymentMethod,
-        paymentId,
-        shippingInfo,
-        totals,
-        items: cart,
-        status: 'Processing'
-    };
-    
-    // In a real application, you would send this to your server
-    // For now, we'll just store it in localStorage
-    
-    // Get existing orders or create empty array
-    const orders = JSON.parse(localStorage.getItem('farmersWebOrders')) || [];
-    
-    // Add new order
-    orders.push(order);
-    
-    // Save orders
-    localStorage.setItem('farmersWebOrders', JSON.stringify(orders));
-    
-    // Update order confirmation UI
-    document.getElementById('order-number').textContent = `#${orderNumber}`;
-    document.getElementById('order-date').textContent = orderDate;
-    document.getElementById('payment-method').textContent = paymentMethod;
-    document.getElementById('shipping-address').textContent = `${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.state}, ${shippingInfo.pincode}`;
-    
-    // Show confirmation
-    const paymentFormContainer = document.getElementById('payment-form-container');
-    const confirmationContainer = document.getElementById('confirmation-container');
-    
-    paymentFormContainer.classList.remove('active');
-    confirmationContainer.classList.add('active');
-    
-    // Update checkout steps
-    updateCheckoutSteps(3);
-    
-    // Clear cart
-    clearCart();
+async function processOrder(paymentMethod, paymentId = null) {
+    try {
+        // Show loading state
+        showLoadingState(true);
+        
+        // Get shipping info and totals
+        const shippingInfo = JSON.parse(localStorage.getItem('farmersWebShippingInfo'));
+        const totals = JSON.parse(localStorage.getItem('farmersWebCheckoutTotals'));
+        const cart = JSON.parse(localStorage.getItem('farmersWebCart'));
+        
+        if (!shippingInfo || !totals || !cart) {
+            throw new Error('Missing order information');
+        }
+        
+        // Get current user
+        const currentUser = getCurrentUser();
+        
+        // Generate order number
+        const orderNumber = generateOrderNumber();
+        
+        // Get current date
+        const orderDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        // Create customer data
+        const customerData = {
+            firstName: shippingInfo.firstName,
+            lastName: shippingInfo.lastName,
+            email: shippingInfo.email,
+            phone: shippingInfo.phone,
+            address: {
+                street: shippingInfo.address,
+                city: shippingInfo.city,
+                state: shippingInfo.state,
+                pincode: shippingInfo.pincode
+            },
+            deliveryInstructions: shippingInfo.deliveryInstructions
+        };
+        
+        // Save or update customer
+        let customerId;
+        const existingCustomer = await getCustomerByEmail(shippingInfo.email);
+        
+        if (existingCustomer) {
+            customerId = existingCustomer.id;
+            console.log('Using existing customer:', customerId);
+        } else {
+            customerId = await saveCustomer(customerData);
+            console.log('Created new customer:', customerId);
+        }
+        
+        // Create order object
+        const orderData = {
+            orderNumber,
+            customerId,
+            userId: currentUser ? currentUser.uid : null,
+            customerInfo: customerData,
+            paymentMethod,
+            paymentId,
+            items: cart.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                image: item.image,
+                total: item.price * item.quantity
+            })),
+            pricing: {
+                subtotal: totals.subtotal,
+                shippingCost: totals.shippingCost,
+                tax: totals.tax,
+                discount: totals.discount || 0,
+                total: totals.total
+            },
+            shippingAddress: {
+                street: shippingInfo.address,
+                city: shippingInfo.city,
+                state: shippingInfo.state,
+                pincode: shippingInfo.pincode,
+                deliveryInstructions: shippingInfo.deliveryInstructions
+            },
+            status: paymentMethod === 'Cash on Delivery' ? 'confirmed' : 'processing',
+            orderDate: new Date().toISOString()
+        };
+        
+        // Save order to Firebase
+        const orderId = await saveOrder(orderData);
+        console.log('Order saved with ID:', orderId);
+        
+        // Save analytics event
+        await saveAnalyticsEvent({
+            event: 'order_placed',
+            orderId,
+            orderNumber,
+            paymentMethod,
+            total: totals.total,
+            itemCount: cart.length,
+            userId: currentUser ? currentUser.uid : null,
+            customerId
+        });
+        
+        // Update order confirmation UI
+        document.getElementById('order-number').textContent = `#${orderNumber}`;
+        document.getElementById('order-date').textContent = orderDate;
+        document.getElementById('payment-method').textContent = paymentMethod;
+        document.getElementById('shipping-address').textContent = `${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.state}, ${shippingInfo.pincode}`;
+        
+        // Store order ID for tracking
+        localStorage.setItem('farmersWebLastOrderId', orderId);
+        localStorage.setItem('farmersWebLastOrderNumber', orderNumber);
+        
+        // Show confirmation
+        const paymentFormContainer = document.getElementById('payment-form-container');
+        const confirmationContainer = document.getElementById('confirmation-container');
+        
+        paymentFormContainer.classList.remove('active');
+        confirmationContainer.classList.add('active');
+        
+        // Update checkout steps
+        updateCheckoutSteps(3);
+        
+        // Clear cart and checkout data
+        clearCart();
+        clearCheckoutData();
+        
+        // Show success notification
+        showNotification('Order placed successfully!', 'success');
+        
+        // Hide loading state
+        showLoadingState(false);
+        
+    } catch (error) {
+        console.error('Error processing order:', error);
+        showNotification('Failed to process order: ' + error.message, 'error');
+        showLoadingState(false);
+    }
 }
 
 // Function to show notification
@@ -458,4 +557,60 @@ function showNotification(message, type = 'success') {
             notification.remove();
         }, 300);
     }, 3000);
+}
+
+// Function to clear cart
+function clearCart() {
+    localStorage.removeItem('farmersWebCart');
+    
+    // Update cart count in UI
+    const cartCount = document.querySelector('.cart-count');
+    if (cartCount) {
+        cartCount.textContent = '0';
+    }
+}
+
+// Function to clear checkout data
+function clearCheckoutData() {
+    localStorage.removeItem('farmersWebShippingInfo');
+    localStorage.removeItem('farmersWebCheckoutTotals');
+}
+
+// Function to show loading state
+function showLoadingState(isLoading) {
+    const placeOrderBtn = document.getElementById('place-order-btn');
+    const backBtn = document.getElementById('back-to-shipping');
+    
+    if (isLoading) {
+        if (placeOrderBtn) {
+            placeOrderBtn.disabled = true;
+            placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Order...';
+        }
+        if (backBtn) {
+            backBtn.disabled = true;
+        }
+    } else {
+        if (placeOrderBtn) {
+            placeOrderBtn.disabled = false;
+            placeOrderBtn.innerHTML = 'Place Order';
+        }
+        if (backBtn) {
+            backBtn.disabled = false;
+        }
+    }
+}
+
+// Function to check authentication state
+function checkAuthState() {
+    const currentUser = getCurrentUser();
+    
+    if (currentUser) {
+        // Pre-fill email if user is logged in
+        const emailInput = document.getElementById('email');
+        if (emailInput && !emailInput.value) {
+            emailInput.value = currentUser.email;
+            emailInput.readOnly = true;
+            emailInput.style.backgroundColor = '#f5f5f5';
+        }
+    }
 }

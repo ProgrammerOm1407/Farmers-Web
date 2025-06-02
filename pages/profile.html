@@ -334,27 +334,59 @@
 
     <script src="../js/main.js"></script>
     <script src="../js/cart.js"></script>
-    <script src="../js/auth.js"></script>
-    <script>
+    <script type="module" src="../js/firebase-config.js"></script>
+    <script type="module" src="../js/firebase-service.js"></script>
+    <script type="module" src="../js/auth.js"></script>
+    <script type="module">
+        import { auth, db } from '../js/firebase-config.js';
+        import { onAuthStateChanged, updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { collection, query, where, getDocs, updateDoc, doc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { showAlert, showNotification } from '../js/auth.js';
+
         document.addEventListener('DOMContentLoaded', function() {
             // Check if user is logged in
-            const currentUser = getCurrentUser();
-            if (!currentUser) {
-                // Redirect to login page if not logged in
-                window.location.href = 'login.html';
-                return;
+            onAuthStateChanged(auth, (user) => {
+                if (!user) {
+                    // Redirect to login page if not logged in
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // Initialize profile with user data
+                initializeProfile(user);
+            });
+            
+            async function initializeProfile(user) {
+                // Populate basic user information from Firebase Auth
+                const displayName = user.displayName || user.email.split('@')[0];
+                document.getElementById('profile-name').textContent = displayName;
+                document.getElementById('profile-email').textContent = user.email;
+                document.getElementById('fullname').value = displayName;
+                document.getElementById('email').value = user.email;
+                
+                // Set avatar initials
+                const initials = displayName.split(' ').map(name => name[0]).join('').toUpperCase();
+                document.getElementById('profile-avatar').innerHTML = initials;
+                
+                // Try to get additional user data from Firestore
+                try {
+                    const usersRef = collection(db, 'users');
+                    const q = query(usersRef, where('uid', '==', user.uid));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        const userData = querySnapshot.docs[0].data();
+                        if (userData.phone) {
+                            document.getElementById('phone').value = userData.phone;
+                        }
+                        if (userData.address) {
+                            document.getElementById('address').value = userData.address;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
+                }
             }
-            
-            // Populate user information
-            document.getElementById('profile-name').textContent = currentUser.fullname;
-            document.getElementById('profile-email').textContent = currentUser.email;
-            document.getElementById('fullname').value = currentUser.fullname;
-            document.getElementById('email').value = currentUser.email;
-            document.getElementById('phone').value = currentUser.phone || '';
-            
-            // Set avatar initials
-            const initials = currentUser.fullname.split(' ').map(name => name[0]).join('');
-            document.getElementById('profile-avatar').innerHTML = initials;
             
             // Tab switching functionality
             const profileTabs = document.querySelectorAll('.profile-tab');
@@ -418,13 +450,17 @@
             const personalInfoForm = document.getElementById('personal-info-form');
             
             if (personalInfoForm) {
-                personalInfoForm.addEventListener('submit', function(e) {
+                personalInfoForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
+                    
+                    const user = auth.currentUser;
+                    if (!user) return;
                     
                     // Get form values
                     const fullname = document.getElementById('fullname').value.trim();
                     const phone = document.getElementById('phone').value.trim();
                     const address = document.getElementById('address').value.trim();
+                    const submitBtn = this.querySelector('button[type="submit"]');
                     
                     // Validate form
                     if (!fullname) {
@@ -437,41 +473,49 @@
                         return;
                     }
                     
-                    // Update user information
-                    const updatedUser = {
-                        ...currentUser,
-                        fullname,
-                        phone: phone || null,
-                        address: address || null
-                    };
-                    
-                    // Update in localStorage
-                    localStorage.setItem('farmersWebCurrentUser', JSON.stringify(updatedUser));
-                    
-                    // Update users array
-                    const users = JSON.parse(localStorage.getItem('farmersWebUsers')) || [];
-                    const userIndex = users.findIndex(u => u.email === currentUser.email);
-                    
-                    if (userIndex !== -1) {
-                        users[userIndex] = {
-                            ...users[userIndex],
-                            fullname,
-                            phone: phone || null,
-                            address: address || null
-                        };
+                    try {
+                        // Add loading state
+                        submitBtn.classList.add('loading');
+                        submitBtn.disabled = true;
                         
-                        localStorage.setItem('farmersWebUsers', JSON.stringify(users));
+                        // Update Firebase Auth profile
+                        await updateProfile(user, {
+                            displayName: fullname
+                        });
+                        
+                        // Update Firestore document
+                        const usersRef = collection(db, 'users');
+                        const q = query(usersRef, where('uid', '==', user.uid));
+                        const querySnapshot = await getDocs(q);
+                        
+                        if (!querySnapshot.empty) {
+                            const userDocRef = doc(db, 'users', querySnapshot.docs[0].id);
+                            await updateDoc(userDocRef, {
+                                fullname: fullname,
+                                phone: phone || null,
+                                address: address || null,
+                                updatedAt: new Date()
+                            });
+                        }
+                        
+                        // Update profile header
+                        document.getElementById('profile-name').textContent = fullname;
+                        
+                        // Update avatar initials
+                        const initials = fullname.split(' ').map(name => name[0]).join('').toUpperCase();
+                        document.getElementById('profile-avatar').innerHTML = initials;
+                        
+                        // Show success notification
+                        showNotification('Profile updated successfully');
+                        
+                    } catch (error) {
+                        console.error('Error updating profile:', error);
+                        showAlert('Failed to update profile. Please try again.');
+                    } finally {
+                        // Remove loading state
+                        submitBtn.classList.remove('loading');
+                        submitBtn.disabled = false;
                     }
-                    
-                    // Update profile header
-                    document.getElementById('profile-name').textContent = fullname;
-                    
-                    // Update avatar initials
-                    const initials = fullname.split(' ').map(name => name[0]).join('');
-                    document.getElementById('profile-avatar').innerHTML = initials;
-                    
-                    // Show success notification
-                    showNotification('Profile updated successfully');
                 });
             }
             
@@ -479,13 +523,17 @@
             const securityForm = document.getElementById('security-form');
             
             if (securityForm) {
-                securityForm.addEventListener('submit', function(e) {
+                securityForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
+                    
+                    const user = auth.currentUser;
+                    if (!user) return;
                     
                     // Get form values
                     const currentPassword = document.getElementById('current-password').value;
                     const newPassword = document.getElementById('new-password').value;
                     const confirmNewPassword = document.getElementById('confirm-new-password').value;
+                    const submitBtn = this.querySelector('button[type="submit"]');
                     
                     // Validate form
                     if (!currentPassword) {
@@ -498,8 +546,8 @@
                         return;
                     }
                     
-                    if (newPassword.length < 8) {
-                        showAlert('New password must be at least 8 characters long');
+                    if (newPassword.length < 6) {
+                        showAlert('New password must be at least 6 characters long');
                         return;
                     }
                     
@@ -514,26 +562,48 @@
                         return;
                     }
                     
-                    // Verify current password
-                    const users = JSON.parse(localStorage.getItem('farmersWebUsers')) || [];
-                    const user = users.find(u => u.email === currentUser.email);
-                    
-                    if (!user || user.password !== hashPassword(currentPassword)) {
-                        showAlert('Current password is incorrect');
-                        return;
+                    try {
+                        // Add loading state
+                        submitBtn.classList.add('loading');
+                        submitBtn.disabled = true;
+                        
+                        // Re-authenticate user with current password
+                        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                        await reauthenticateWithCredential(user, credential);
+                        
+                        // Update password
+                        await updatePassword(user, newPassword);
+                        
+                        // Clear form
+                        this.reset();
+                        
+                        // Show success notification
+                        showNotification('Password updated successfully');
+                        
+                    } catch (error) {
+                        console.error('Error updating password:', error);
+                        let errorMessage = 'Failed to update password';
+                        
+                        switch (error.code) {
+                            case 'auth/wrong-password':
+                                errorMessage = 'Current password is incorrect';
+                                break;
+                            case 'auth/weak-password':
+                                errorMessage = 'New password is too weak';
+                                break;
+                            case 'auth/requires-recent-login':
+                                errorMessage = 'Please log out and log back in before changing your password';
+                                break;
+                            default:
+                                errorMessage = error.message;
+                        }
+                        
+                        showAlert(errorMessage);
+                    } finally {
+                        // Remove loading state
+                        submitBtn.classList.remove('loading');
+                        submitBtn.disabled = false;
                     }
-                    
-                    // Update password
-                    user.password = hashPassword(newPassword);
-                    
-                    // Update in localStorage
-                    localStorage.setItem('farmersWebUsers', JSON.stringify(users));
-                    
-                    // Clear form
-                    securityForm.reset();
-                    
-                    // Show success notification
-                    showNotification('Password updated successfully');
                 });
             }
             

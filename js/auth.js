@@ -1,46 +1,104 @@
-// Authentication functionality for Farmers Web
+// Firebase Authentication functionality for Farmers Web
+
+import { 
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
+    signOut,
+    onAuthStateChanged,
+    sendPasswordResetEmail
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+import { auth } from './firebase-config.js';
+import { signInUser, signOutUser, resetPassword } from './firebase-service.js';
+
+// Initialize Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if user is already logged in
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-        // Update UI for logged-in user
-        updateUIForLoggedInUser(currentUser);
+    console.log('Auth.js loaded, Firebase auth:', auth);
+    
+    // Check authentication state
+    onAuthStateChanged(auth, (user) => {
+        console.log('Auth state changed:', user);
+        if (user) {
+            updateUIForLoggedInUser(user);
+            // Store user info in localStorage for quick access
+            localStorage.setItem('farmersWebUser', JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL
+            }));
+        } else {
+            updateUIForLoggedOutUser();
+            // Clear user info from localStorage
+            localStorage.removeItem('farmersWebUser');
+        }
+    });
+    
+    // Initialize UI immediately if user is already logged in
+    if (auth.currentUser) {
+        updateUIForLoggedInUser(auth.currentUser);
+    } else {
+        // Check localStorage for quick UI update
+        const storedUser = localStorage.getItem('farmersWebUser');
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                // Quick UI update while waiting for auth state
+                updateUIForLoggedInUser(userData);
+            } catch (e) {
+                console.error('Error parsing stored user data:', e);
+                localStorage.removeItem('farmersWebUser');
+            }
+        }
     }
     
-    // Make email tab active by default
-    const authTabs = document.querySelectorAll('.auth-tab');
-    const authForms = document.querySelectorAll('.auth-form');
-    
-    // Set email tab as active by default
-    if (authTabs.length > 0) {
-        // Remove active class from all tabs and forms
-        authTabs.forEach(t => t.classList.remove('active'));
-        authForms.forEach(f => f.classList.remove('active'));
-        
-        // Find and activate email tab
-        const emailTab = document.querySelector('.auth-tab[data-tab="email"]');
-        if (emailTab) {
-            emailTab.classList.add('active');
-        }
-        
-        // Show email form
-        const emailForm = document.getElementById('email-login-form');
-        if (emailForm) {
-            emailForm.classList.add('active');
-        }
-        
-        // Hide phone-related forms
-        const phoneForm = document.getElementById('phone-login-form');
-        const otpForm = document.getElementById('otp-verification-form');
-        if (phoneForm) phoneForm.style.display = 'none';
-        if (otpForm) otpForm.style.display = 'none';
-        
-        // Hide the phone tab
-        const phoneTab = document.querySelector('.auth-tab[data-tab="phone"]');
-        if (phoneTab) {
-            phoneTab.style.display = 'none';
-        }
+    // Google Sign-In
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    if (googleLoginBtn) {
+        googleLoginBtn.addEventListener('click', async function() {
+            try {
+                // Add loading state
+                this.classList.add('loading');
+                this.disabled = true;
+                
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                
+                showNotification('Login successful! Redirecting...');
+                
+                // Redirect to home page after a short delay
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Google sign-in error:', error);
+                let errorMessage = 'Failed to sign in with Google';
+                
+                switch (error.code) {
+                    case 'auth/popup-closed-by-user':
+                        errorMessage = 'Sign-in was cancelled';
+                        break;
+                    case 'auth/popup-blocked':
+                        errorMessage = 'Popup was blocked by browser';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Network error. Please check your connection';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showAlert(errorMessage);
+            } finally {
+                // Remove loading state
+                this.classList.remove('loading');
+                this.disabled = false;
+            }
+        });
     }
     
     // Toggle password visibility
@@ -67,11 +125,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const emailLoginForm = document.getElementById('email-login-form');
     
     if (emailLoginForm) {
-        emailLoginForm.addEventListener('submit', function(e) {
+        emailLoginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
+            const submitBtn = this.querySelector('button[type="submit"]');
             
             // Simple validation
             if (!email || !validateEmail(email)) {
@@ -84,19 +143,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Authenticate user
-            const authenticated = authenticateUser(email, password);
-            
-            if (authenticated) {
-                // Show a notification
+            try {
+                // Add loading state
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+                
+                // Sign in with Firebase
+                await signInWithEmailAndPassword(auth, email, password);
+                
                 showNotification('Login successful! Redirecting...');
                 
                 // Redirect to home page after a short delay
                 setTimeout(() => {
                     window.location.href = '../index.html';
                 }, 1500);
-            } else {
-                showAlert('Invalid email or password');
+                
+            } catch (error) {
+                console.error('Email sign-in error:', error);
+                let errorMessage = 'Invalid email or password';
+                
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = 'No account found with this email';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Incorrect password';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email address';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = 'This account has been disabled';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = 'Too many failed attempts. Please try again later';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Network error. Please check your connection';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showAlert(errorMessage);
+            } finally {
+                // Remove loading state
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
             }
         });
     }
@@ -104,36 +197,136 @@ document.addEventListener('DOMContentLoaded', function() {
     // Logout functionality
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            logoutUser();
-            showNotification('You have been logged out');
             
-            // Redirect to home page
-            setTimeout(() => {
-                window.location.href = '../index.html';
-            }, 1500);
+            try {
+                await signOut(auth);
+                showNotification('You have been logged out');
+                
+                // Redirect to home page
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1500);
+            } catch (error) {
+                console.error('Logout error:', error);
+                showAlert('Failed to logout. Please try again.');
+            }
         });
     }
     
     // Forgot password functionality
     const forgotPasswordLink = document.querySelector('.forgot-password');
-    if (forgotPasswordLink) {
+    const forgotPasswordModal = document.getElementById('forgot-password-modal');
+    const closeForgotModalBtn = document.getElementById('close-forgot-modal');
+    const overlay = document.getElementById('overlay');
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    
+    if (forgotPasswordLink && forgotPasswordModal) {
+        // Open modal when clicking forgot password link
         forgotPasswordLink.addEventListener('click', function(e) {
             e.preventDefault();
             
-            const email = document.getElementById('email').value.trim();
+            // Pre-fill email if it exists in the login form
+            const loginEmail = document.getElementById('email').value.trim();
+            const resetEmail = document.getElementById('reset-email');
             
-            if (!email || !validateEmail(email)) {
-                showAlert('Please enter your email address in the email field');
-                return;
+            if (loginEmail && validateEmail(loginEmail) && resetEmail) {
+                resetEmail.value = loginEmail;
             }
             
-            // In a real application, you would send a password reset email
-            // For demo purposes, we'll just show a notification
-            
-            showNotification(`Password reset instructions sent to ${email}`);
+            // Show modal and overlay
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+            forgotPasswordModal.classList.add('active');
+            if (overlay) overlay.style.display = 'block';
         });
+        
+        // Close modal when clicking the close button
+        if (closeForgotModalBtn) {
+            closeForgotModalBtn.addEventListener('click', function() {
+                closeResetModal();
+            });
+        }
+        
+        // Close modal when clicking outside
+        if (overlay) {
+            overlay.addEventListener('click', function() {
+                closeResetModal();
+            });
+        }
+        
+        // Close modal with ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && forgotPasswordModal.classList.contains('active')) {
+                closeResetModal();
+            }
+        });
+        
+        // Handle form submission
+        if (forgotPasswordForm) {
+            forgotPasswordForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('reset-email').value.trim();
+                
+                if (!email || !validateEmail(email)) {
+                    showAlert('Please enter a valid email address');
+                    return;
+                }
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                
+                try {
+                    // Show loading state
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                    submitBtn.disabled = true;
+                    
+                    // Send password reset email using Firebase
+                    await sendPasswordResetEmail(auth, email);
+                    
+                    // Close the modal
+                    closeResetModal();
+                    
+                    // Show success notification
+                    showNotification(`Password reset instructions sent to ${email}`);
+                    
+                } catch (error) {
+                    console.error('Password reset error:', error);
+                    let errorMessage = 'Failed to send reset email';
+                    
+                    switch (error.code) {
+                        case 'auth/user-not-found':
+                            errorMessage = 'No account found with this email';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMessage = 'Invalid email address';
+                            break;
+                        case 'auth/too-many-requests':
+                            errorMessage = 'Too many requests. Please try again later';
+                            break;
+                        case 'auth/network-request-failed':
+                            errorMessage = 'Network error. Please check your connection';
+                            break;
+                        default:
+                            errorMessage = error.message;
+                    }
+                    
+                    showAlert(errorMessage);
+                } finally {
+                    // Reset button state
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        }
+        
+        // Function to close the reset password modal
+        function closeResetModal() {
+            document.body.style.overflow = ''; // Re-enable scrolling
+            forgotPasswordModal.classList.remove('active');
+            if (overlay) overlay.style.display = 'none';
+        }
     }
 });
 
@@ -143,87 +336,246 @@ function validateEmail(email) {
     return re.test(String(email).toLowerCase());
 }
 
-// Function to authenticate user
-function authenticateUser(email, password) {
-    // Get users from localStorage
-    const users = JSON.parse(localStorage.getItem('farmersWebUsers')) || [];
-    
-    // Find user with matching email
-    const user = users.find(u => u.email === email);
-    
-    // If user not found or password doesn't match, return false
-    if (!user || user.password !== hashPassword(password)) {
-        return false;
-    }
-    
-    // Set current user in localStorage (session)
-    const sessionUser = {
-        id: user.id || Date.now(),
-        fullname: user.fullname,
-        email: user.email,
-        phone: user.phone,
-        loggedInAt: new Date().toISOString()
-    };
-    
-    localStorage.setItem('farmersWebCurrentUser', JSON.stringify(sessionUser));
-    
-    return true;
-}
-
 // Function to get current logged-in user
 function getCurrentUser() {
-    return JSON.parse(localStorage.getItem('farmersWebCurrentUser'));
+    return auth.currentUser;
 }
 
 // Function to update UI for logged-in user
 function updateUIForLoggedInUser(user) {
-    // Update login button to show user name
     const loginBtn = document.querySelector('.login-btn');
-    if (loginBtn) {
-        loginBtn.textContent = user.fullname.split(' ')[0]; // Show first name
+    if (loginBtn && !document.querySelector('.user-profile-btn')) {
+        // Change class from login-btn to user-profile-btn
+        loginBtn.classList.remove('login-btn');
+        loginBtn.classList.add('user-profile-btn');
+        
+        // Use display name or email
+        const displayName = user.displayName || user.email.split('@')[0];
+        loginBtn.textContent = displayName;
         loginBtn.href = '#';
         
         // Create dropdown for user menu
         const dropdown = document.createElement('div');
         dropdown.className = 'user-dropdown';
+        dropdown.style.cssText = `
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            min-width: 150px;
+            z-index: 1000;
+            display: none;
+            margin-top: 5px;
+        `;
+        
+        // Determine correct paths based on current page location
+        const isInPagesFolder = window.location.pathname.includes('/pages/');
+        const profilePath = isInPagesFolder ? 'profile.html' : 'pages/profile.html';
+        const ordersPath = isInPagesFolder ? 'orders.html' : 'pages/orders.html';
+        
         dropdown.innerHTML = `
-            <ul>
-                <li><a href="profile.html">My Profile</a></li>
-                <li><a href="orders.html">My Orders</a></li>
-                <li><a href="#" id="logout-btn">Logout</a></li>
+            <ul style="list-style: none; margin: 0; padding: 10px 0;">
+                <li><a href="${profilePath}" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; transition: background 0.3s;">My Profile</a></li>
+                <li><a href="${ordersPath}" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; transition: background 0.3s;">My Orders</a></li>
+                <li><a href="#" id="logout-btn" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; transition: background 0.3s;">Logout</a></li>
             </ul>
         `;
         
-        // Add dropdown to login button
-        loginBtn.appendChild(dropdown);
-        
-        // Show dropdown on hover
-        loginBtn.addEventListener('mouseenter', function() {
-            dropdown.style.display = 'block';
+        // Add hover effects to dropdown items
+        const dropdownLinks = dropdown.querySelectorAll('a');
+        dropdownLinks.forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                link.style.background = 'rgba(76, 175, 80, 0.1)';
+            });
+            link.addEventListener('mouseleave', () => {
+                link.style.background = 'transparent';
+            });
         });
         
-        loginBtn.addEventListener('mouseleave', function() {
-            dropdown.style.display = 'none';
+        // Create a wrapper for the button and dropdown
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+        wrapper.style.display = 'inline-block';
+        
+        // Insert wrapper before the login button
+        loginBtn.parentNode.insertBefore(wrapper, loginBtn);
+        
+        // Move login button into wrapper
+        wrapper.appendChild(loginBtn);
+        
+        // Add dropdown to wrapper
+        wrapper.appendChild(dropdown);
+        
+        // Toggle dropdown on click
+        loginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
         });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!wrapper.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+        
+        // Handle logout button click
+        setTimeout(() => {
+            const logoutBtn = dropdown.querySelector('#logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    
+                    try {
+                        await signOut(auth);
+                        showNotification('You have been logged out');
+                        
+                        // Redirect to home page
+                        setTimeout(() => {
+                            if (isInPagesFolder) {
+                                window.location.href = '../index.html';
+                            } else {
+                                window.location.href = 'index.html';
+                            }
+                        }, 1500);
+                    } catch (error) {
+                        console.error('Logout error:', error);
+                        showAlert('Failed to logout. Please try again.');
+                    }
+                });
+            }
+        }, 100);
     }
 }
 
-// Function to logout user
-function logoutUser() {
-    localStorage.removeItem('farmersWebCurrentUser');
-}
-
-// Function to hash password (for demo purposes only)
-// In a real application, this would be done server-side
-function hashPassword(password) {
-    // This is NOT secure and is only for demonstration
-    // In a real app, use a proper hashing algorithm on the server
-    return btoa(password); // Base64 encoding (NOT secure for real use)
+// Function to update UI for logged-out user
+function updateUIForLoggedOutUser() {
+    const userProfileBtn = document.querySelector('.user-profile-btn');
+    if (userProfileBtn) {
+        // Remove the user dropdown
+        const wrapper = userProfileBtn.parentElement;
+        const dropdown = wrapper.querySelector('.user-dropdown');
+        if (dropdown) {
+            dropdown.remove();
+        }
+        
+        // Change class back to login-btn
+        userProfileBtn.classList.remove('user-profile-btn');
+        userProfileBtn.classList.add('login-btn');
+        
+        // Reset text and href
+        userProfileBtn.textContent = 'Login';
+        
+        // Set the correct href based on current page
+        if (window.location.pathname.includes('/index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/Farmers Web/')) {
+            userProfileBtn.href = 'pages/login.html';
+        } else {
+            userProfileBtn.href = 'login.html';
+        }
+        
+        // Move button back to original location
+        const navButtons = document.querySelector('.nav-buttons');
+        if (navButtons && wrapper.parentElement === navButtons) {
+            navButtons.insertBefore(userProfileBtn, wrapper);
+            wrapper.remove();
+        }
+    }
 }
 
 // Function to show alert
 function showAlert(message) {
-    alert(message);
+    // Create a custom alert modal instead of browser alert
+    const alertModal = document.createElement('div');
+    alertModal.className = 'alert-modal';
+    alertModal.innerHTML = `
+        <div class="alert-content">
+            <div class="alert-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert-message">${message}</div>
+            <button class="alert-close-btn">OK</button>
+        </div>
+    `;
+    
+    // Add styles
+    alertModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    `;
+    
+    const alertContent = alertModal.querySelector('.alert-content');
+    alertContent.style.cssText = `
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    `;
+    
+    const alertIcon = alertModal.querySelector('.alert-icon');
+    alertIcon.style.cssText = `
+        font-size: 48px;
+        color: #ff6b6b;
+        margin-bottom: 20px;
+    `;
+    
+    const alertMessage = alertModal.querySelector('.alert-message');
+    alertMessage.style.cssText = `
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 25px;
+        line-height: 1.5;
+    `;
+    
+    const alertCloseBtn = alertModal.querySelector('.alert-close-btn');
+    alertCloseBtn.style.cssText = `
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    `;
+    
+    alertCloseBtn.addEventListener('mouseover', () => {
+        alertCloseBtn.style.background = '#45a049';
+    });
+    
+    alertCloseBtn.addEventListener('mouseout', () => {
+        alertCloseBtn.style.background = '#4CAF50';
+    });
+    
+    // Close modal when clicking the button
+    alertCloseBtn.addEventListener('click', () => {
+        document.body.removeChild(alertModal);
+    });
+    
+    // Close modal when clicking outside
+    alertModal.addEventListener('click', (e) => {
+        if (e.target === alertModal) {
+            document.body.removeChild(alertModal);
+        }
+    });
+    
+    document.body.appendChild(alertModal);
 }
 
 // Function to show notification
@@ -255,7 +607,8 @@ function showNotification(message) {
     `;
     
     // Add styles
-    notification.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+    notification.style.backgroundColor = 'rgba(76, 175, 80, 0.9)';
+    notification.style.color = 'white';
     notification.style.backdropFilter = 'blur(10px)';
     notification.style.padding = '15px 20px';
     notification.style.borderRadius = '10px';
@@ -266,19 +619,22 @@ function showNotification(message) {
     notification.style.justifyContent = 'space-between';
     notification.style.animation = 'slideIn 0.3s forwards';
     
-    // Add animation keyframes
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
+    // Add animation keyframes if not already added
+    if (!document.querySelector('#notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.innerHTML = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
     
     // Add to container
     notificationContainer.appendChild(notification);
@@ -287,7 +643,12 @@ function showNotification(message) {
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s forwards';
         setTimeout(() => {
-            notification.remove();
+            if (notification.parentNode) {
+                notification.remove();
+            }
         }, 300);
     }, 3000);
 }
+
+// Export functions for use in other modules
+export { getCurrentUser, updateUIForLoggedInUser, updateUIForLoggedOutUser, showAlert, showNotification };

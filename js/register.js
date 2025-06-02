@@ -1,6 +1,93 @@
-// Registration functionality for Farmers Web
+// Firebase Registration functionality for Farmers Web
+
+import { 
+    createUserWithEmailAndPassword,
+    updateProfile,
+    onAuthStateChanged,
+    signInWithPopup,
+    GoogleAuthProvider
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+import { 
+    collection, 
+    addDoc, 
+    serverTimestamp 
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+import { auth, db } from './firebase-config.js';
+
+// Initialize Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is already logged in
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // User is already logged in, redirect to home
+            window.location.href = '../index.html';
+        }
+    });
+    
+    // Google Sign-Up
+    const googleRegisterBtn = document.getElementById('google-register-btn');
+    if (googleRegisterBtn) {
+        googleRegisterBtn.addEventListener('click', async function() {
+            try {
+                // Add loading state
+                this.classList.add('loading');
+                this.disabled = true;
+                
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                
+                // Save additional user data to Firestore
+                const userDocData = {
+                    uid: user.uid,
+                    fullname: user.displayName || 'Google User',
+                    email: user.email,
+                    phone: null,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+                
+                await addDoc(collection(db, 'users'), userDocData);
+                
+                showNotification('Account created successfully! Redirecting...');
+                
+                // Redirect to home page after a short delay
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Google sign-up error:', error);
+                let errorMessage = 'Failed to sign up with Google';
+                
+                switch (error.code) {
+                    case 'auth/popup-closed-by-user':
+                        errorMessage = 'Sign-up was cancelled';
+                        break;
+                    case 'auth/popup-blocked':
+                        errorMessage = 'Popup was blocked by browser';
+                        break;
+                    case 'auth/account-exists-with-different-credential':
+                        errorMessage = 'An account already exists with this email';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Network error. Please check your connection';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showAlert(errorMessage);
+            } finally {
+                // Remove loading state
+                this.classList.remove('loading');
+                this.disabled = false;
+            }
+        });
+    }
     // Toggle password visibility for both password fields
     const togglePasswordBtns = document.querySelectorAll('.toggle-password');
     
@@ -46,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const registerForm = document.getElementById('register-form');
     
     if (registerForm) {
-        registerForm.addEventListener('submit', function(e) {
+        registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // Get form values
@@ -56,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
             const termsChecked = document.getElementById('terms').checked;
+            const submitBtn = this.querySelector('button[type="submit"]');
             
             // Validate form
             if (!fullname) {
@@ -73,8 +161,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            if (!password || password.length < 8) {
-                showAlert('Password must be at least 8 characters long');
+            if (!password || password.length < 6) {
+                showAlert('Password must be at least 6 characters long');
                 return;
             }
             
@@ -94,25 +182,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Create user object
-            const user = {
-                fullname,
-                email,
-                phone: phone || null,
-                password: hashPassword(password), // In a real app, this would be done server-side
-                createdAt: new Date().toISOString()
-            };
-            
-            // Save user to localStorage (in a real app, this would be sent to a server)
-            saveUser(user);
-            
-            // Show success notification
-            showNotification('Account created successfully! Redirecting to login...');
-            
-            // Redirect to login page after a short delay
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 2000);
+            try {
+                // Add loading state
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+                
+                // Create user with Firebase Authentication
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Update user profile with display name
+                await updateProfile(user, {
+                    displayName: fullname
+                });
+                
+                // Save additional user data to Firestore
+                const userDocData = {
+                    uid: user.uid,
+                    fullname: fullname,
+                    email: email,
+                    phone: phone || null,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+                
+                await addDoc(collection(db, 'users'), userDocData);
+                
+                // Show success notification
+                showNotification('Account created successfully! Redirecting to home...');
+                
+                // Redirect to home page after a short delay
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Registration error:', error);
+                let errorMessage = 'Failed to create account';
+                
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'An account with this email already exists';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email address';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'Password is too weak';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Network error. Please check your connection';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showAlert(errorMessage);
+            } finally {
+                // Remove loading state
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+            }
         });
     }
 });
@@ -172,38 +302,96 @@ function checkPasswordStrength(password) {
     return { score, level, message };
 }
 
-// Function to hash password (for demo purposes only)
-// In a real application, this would be done server-side
-function hashPassword(password) {
-    // This is NOT secure and is only for demonstration
-    // In a real app, use a proper hashing algorithm on the server
-    return btoa(password); // Base64 encoding (NOT secure for real use)
-}
 
-// Function to save user to localStorage
-function saveUser(user) {
-    // Get existing users or initialize empty array
-    let users = JSON.parse(localStorage.getItem('farmersWebUsers')) || [];
-    
-    // Check if email already exists
-    const emailExists = users.some(u => u.email === user.email);
-    if (emailExists) {
-        showAlert('An account with this email already exists');
-        return false;
-    }
-    
-    // Add new user
-    users.push(user);
-    
-    // Save back to localStorage
-    localStorage.setItem('farmersWebUsers', JSON.stringify(users));
-    
-    return true;
-}
 
 // Function to show alert
 function showAlert(message) {
-    alert(message);
+    // Create a custom alert modal instead of browser alert
+    const alertModal = document.createElement('div');
+    alertModal.className = 'alert-modal';
+    alertModal.innerHTML = `
+        <div class="alert-content">
+            <div class="alert-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert-message">${message}</div>
+            <button class="alert-close-btn">OK</button>
+        </div>
+    `;
+    
+    // Add styles
+    alertModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    `;
+    
+    const alertContent = alertModal.querySelector('.alert-content');
+    alertContent.style.cssText = `
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    `;
+    
+    const alertIcon = alertModal.querySelector('.alert-icon');
+    alertIcon.style.cssText = `
+        font-size: 48px;
+        color: #ff6b6b;
+        margin-bottom: 20px;
+    `;
+    
+    const alertMessage = alertModal.querySelector('.alert-message');
+    alertMessage.style.cssText = `
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 25px;
+        line-height: 1.5;
+    `;
+    
+    const alertCloseBtn = alertModal.querySelector('.alert-close-btn');
+    alertCloseBtn.style.cssText = `
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    `;
+    
+    alertCloseBtn.addEventListener('mouseover', () => {
+        alertCloseBtn.style.background = '#45a049';
+    });
+    
+    alertCloseBtn.addEventListener('mouseout', () => {
+        alertCloseBtn.style.background = '#4CAF50';
+    });
+    
+    // Close modal when clicking the button
+    alertCloseBtn.addEventListener('click', () => {
+        document.body.removeChild(alertModal);
+    });
+    
+    // Close modal when clicking outside
+    alertModal.addEventListener('click', (e) => {
+        if (e.target === alertModal) {
+            document.body.removeChild(alertModal);
+        }
+    });
+    
+    document.body.appendChild(alertModal);
 }
 
 // Function to show notification
